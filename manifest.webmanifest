@@ -1,0 +1,16 @@
+{
+  "name": "Radio Check",
+  "short_name": "Radio Check",
+  "description": "English–Russian ATC phraseology trainer",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1B4F8A",
+  "theme_color": "#1B4F8A",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

@@ -1,0 +1,933 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1B4F8A">
+<meta name="color-scheme" content="light dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Radio Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout concept: a phone trainer styled after the cockpit/tower desk. Chart-paper ground,
+   every phrase shown as a ruled ATC flight strip with mono text. The strip carries the
+   personality; everything around it stays quiet. */
+:root{
+  --bg:#E8EDF1; --surface:#FFFFFF; --surface2:#F1F4F7; --ink:#0D1B2A; --muted:#556677; --line:#CFD8E0;
+  --primary:#1B4F8A; --primary-d:#12365F; --on-primary:#FFFFFF;
+  --signal:#F2A000; --on-signal:#1A1200;
+  --good:#1B8657; --good-d:#126140; --good-bg:#DCF2E6;
+  --bad:#C23A2E; --bad-d:#8F2A21; --bad-bg:#FBE2DF;
+  --shadow:0 1px 0 rgba(13,27,42,.05),0 8px 20px -14px rgba(13,27,42,.35);
+  --f-disp:'IBM Plex Sans Condensed','Arial Narrow',system-ui,sans-serif;
+  --f-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#09131C; --surface:#10202E; --surface2:#162A3B; --ink:#E6EEF5; --muted:#8FA3B5; --line:#243A4D;
+    --primary:#5AA2EE; --primary-d:#2F6DB0; --on-primary:#04111D;
+    --signal:#FFB41F; --on-signal:#1A1200;
+    --good:#3BC987; --good-d:#238A5C; --good-bg:#11372A;
+    --bad:#FF7468; --bad-d:#B24A41; --bad-bg:#431F1A;
+    --shadow:0 1px 0 rgba(0,0,0,.3),0 8px 20px -14px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#09131C; --surface:#10202E; --surface2:#162A3B; --ink:#E6EEF5; --muted:#8FA3B5; --line:#243A4D;
+  --primary:#5AA2EE; --primary-d:#2F6DB0; --on-primary:#04111D;
+  --signal:#FFB41F; --on-signal:#1A1200;
+  --good:#3BC987; --good-d:#238A5C; --good-bg:#11372A;
+  --bad:#FF7468; --bad-d:#B24A41; --bad-bg:#431F1A;
+  --shadow:0 1px 0 rgba(0,0,0,.3),0 8px 20px -14px rgba(0,0,0,.7);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--f-body);margin:0;min-height:100%}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0;text-align:inherit}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+h2{margin:0}
+.wrap{max-width:560px;margin:0 auto;padding:10px 16px 110px}
+.h2{font:600 12px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px}
+.kicker{font:600 11px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0 14px}
+.brand{display:flex;align-items:center;gap:10px;font:700 21px/1 var(--f-disp);letter-spacing:.07em;text-transform:uppercase}
+.brand svg{width:24px;height:24px;color:var(--primary)}
+.rankchip{font:600 11px var(--f-mono);letter-spacing:.05em;text-transform:uppercase;padding:6px 9px;border:1px solid var(--line);border-radius:3px;background:var(--surface);white-space:nowrap}
+
+/* hero */
+.hero{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center;box-shadow:var(--shadow)}
+.ring{position:relative;width:88px;height:88px}
+.ring svg{display:block;transform:rotate(-90deg)}
+.ring .num{position:absolute;inset:0;display:grid;place-items:center;font:700 22px var(--f-disp)}
+.big{font:700 34px/1.05 var(--f-disp);font-variant-numeric:tabular-nums}
+.big small{font:500 14px var(--f-mono);color:var(--muted)}
+.streak{display:flex;align-items:center;gap:6px;margin-top:4px;color:var(--muted);font-weight:500;font-size:14px}
+.streak svg{width:18px;height:18px;color:var(--signal)}
+.hero .btn{grid-column:1/-1;margin-top:12px}
+.duerow{grid-column:1/-1;display:flex;gap:16px;font:500 13px var(--f-mono);color:var(--muted);padding-top:10px}
+.duerow b{color:var(--ink);font-weight:600}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;border-radius:10px;font-weight:600;font-size:16px;min-height:50px;transition:transform .08s,box-shadow .08s;text-align:center}
+.btn:active{transform:translateY(2px)}
+.btn.primary{background:var(--primary);color:var(--on-primary);box-shadow:0 3px 0 var(--primary-d)}
+.btn.primary:active{box-shadow:0 1px 0 var(--primary-d)}
+.btn.ghost{background:var(--surface);border:1.5px solid var(--line);box-shadow:0 3px 0 var(--line)}
+.btn.good{background:var(--good);color:#fff;box-shadow:0 3px 0 var(--good-d)}
+.btn.bad{background:var(--bad);color:#fff;box-shadow:0 3px 0 var(--bad-d)}
+.btn.wide{width:100%}
+.btn.sm{min-height:40px;padding:8px 14px;font-size:14px;border-radius:8px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.row{display:flex;gap:10px;margin-top:14px}
+.row .btn{flex:1}
+
+/* chips & units */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 16px 6px;margin:0 -16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:8px 13px;border:1.5px solid var(--line);border-radius:999px;background:var(--surface);font:600 13px var(--f-mono)}
+.chip[aria-pressed=true]{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.units{display:grid;gap:8px}
+.unit{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center;width:100%;padding:11px 12px;background:var(--surface);border:1.5px solid var(--line);border-radius:8px}
+.unit[aria-pressed=true]{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.roman{font:700 18px var(--f-disp);display:grid;place-items:center;height:44px;border:1px solid var(--line);border-radius:3px;background:var(--surface2)}
+.uname{font-weight:600;line-height:1.25}
+.umeta{font:500 12px var(--f-mono);color:var(--muted);margin-top:2px}
+.seg{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--line);margin-top:7px}
+.seg i{display:block;height:100%}
+.seg .m{background:var(--good)}.seg .l{background:var(--signal)}
+
+/* strip */
+.strip{display:grid;grid-template-columns:auto minmax(0,1fr) auto;border:1px solid var(--line);border-radius:3px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden}
+.strip .tag{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:8px 8px;min-width:54px;border-right:1px dashed var(--line);background:var(--surface2);font:600 11px/1.1 var(--f-mono);color:var(--muted)}
+.strip .tag b{font:700 19px/1 var(--f-disp);color:var(--ink)}
+.strip .txt{padding:10px 14px;min-width:0;display:grid;gap:4px}
+.en{font-family:var(--f-mono);font-weight:500;font-size:14.5px;line-height:1.5;overflow-wrap:anywhere}
+.ru{font-size:15px;line-height:1.45;color:var(--muted);overflow-wrap:anywhere}
+.spk{width:48px;display:grid;place-items:center;color:var(--primary);border-left:1px dashed var(--line)}
+.spk svg{width:22px;height:22px}
+.list{display:grid;gap:10px}
+.cov{filter:blur(7px);cursor:pointer;user-select:none}
+.pips{display:flex;gap:3px;margin-top:2px}
+.pips i{width:14px;height:4px;border-radius:2px;background:var(--line)}
+.pips i.on{background:var(--signal)}.pips i.m{background:var(--good)}
+.prompt .txt{padding:14px 16px}
+.prompt .ru{color:var(--ink);font-size:18px;line-height:1.4}
+.prompt .en{font-size:16.5px}
+
+/* tiles */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:14px;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;min-height:118px;box-shadow:0 3px 0 var(--line);transition:transform .08s,box-shadow .08s}
+.tile:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.tile svg{width:26px;height:26px;color:var(--primary)}
+.tile b{font:700 19px/1.1 var(--f-disp);margin-top:4px}
+.tile span{font-size:13px;color:var(--muted);line-height:1.3}
+.tile[disabled]{opacity:.5;pointer-events:none}
+.scopeline{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:2px 0 8px;font-size:14px;color:var(--muted)}
+.scopeline b{color:var(--ink)}
+
+/* tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));z-index:10}
+.tabs>div{display:flex;max-width:560px;margin:0 auto}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;color:var(--muted);font:600 10.5px var(--f-mono);letter-spacing:.07em;text-transform:uppercase}
+.tab svg{width:24px;height:24px}
+.tab[aria-current=page]{color:var(--primary)}
+
+/* phrasebook */
+.search{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:16px var(--f-body)}
+.segc{display:flex;border:1.5px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.segc button{flex:1;padding:9px 6px;text-align:center;font:600 12.5px var(--f-mono);color:var(--muted);border-right:1px solid var(--line)}
+.segc button:last-child{border-right:0}
+.segc button[aria-pressed=true]{background:var(--primary);color:var(--on-primary)}
+.tools{display:grid;gap:10px;margin-bottom:12px}
+
+/* progress */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;box-shadow:var(--shadow)}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat b{display:block;font:700 28px/1.1 var(--f-disp);font-variant-numeric:tabular-nums}
+.stat span{font:500 12px var(--f-mono);color:var(--muted)}
+.xpbar{height:10px;border-radius:5px;background:var(--line);overflow:hidden;margin:10px 0 6px}
+.xpbar i{display:block;height:100%;background:var(--signal)}
+.week{display:flex;align-items:flex-end;gap:8px;height:96px;margin-top:10px}
+.week div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%}
+.week i{display:block;width:100%;background:var(--primary);border-radius:3px 3px 0 0;min-height:3px}
+.week i.today{background:var(--signal)}
+.week span{font:500 10.5px var(--f-mono);color:var(--muted)}
+.setrow{display:grid;gap:6px;margin-top:14px}
+.setrow label{font-weight:600;font-size:14px}
+textarea.bk{width:100%;min-height:76px;margin-top:8px;padding:10px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface2);color:var(--ink);font:12px/1.4 var(--f-mono);resize:vertical}
+
+/* session */
+.sess{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.sbar{display:flex;align-items:center;gap:12px;padding:12px 16px 6px;max-width:560px;width:100%;margin:0 auto}
+.x{width:36px;height:36px;display:grid;place-items:center;color:var(--muted);flex:none}
+.x svg{width:24px;height:24px}
+.pbar{flex:1;height:12px;border-radius:6px;background:var(--line);overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--primary);border-radius:6px;transition:width .3s}
+.pbar.time i{background:var(--signal);transition:width .1s linear}
+.combo{font:700 13px var(--f-mono);background:var(--signal);color:var(--on-signal);padding:3px 9px;border-radius:999px;flex:none}
+.sbody{flex:1;overflow:auto;padding:8px 16px 24px;max-width:560px;width:100%;margin:0 auto}
+.qlabel{font:600 12px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:6px 0 10px}
+.opts{display:grid;gap:10px;margin-top:16px}
+.opts.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.opt{display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;align-items:start;padding:13px 14px;border:1.5px solid var(--line);border-bottom-width:3px;border-radius:10px;background:var(--surface);min-height:54px}
+.opt .n{font:600 12px var(--f-mono);color:var(--muted);padding-top:3px}
+.opts.two .opt{grid-template-columns:1fr;justify-items:center;align-items:center;text-align:center;min-height:58px}
+.opts.two .opt .n{display:none}
+.opts.two .opt .en{font-size:17px;font-weight:600}
+.opt.good{border-color:var(--good);background:var(--good-bg)}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.opt.dim{opacity:.55}
+.sheet{padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));border-top:2px solid;animation:up .2s ease-out}
+.sheet.good{background:var(--good-bg);border-color:var(--good)}
+.sheet.bad{background:var(--bad-bg);border-color:var(--bad)}
+.sheet-in{max-width:560px;margin:0 auto;display:grid;gap:8px}
+.sh-head{display:flex;justify-content:space-between;align-items:baseline;font:700 22px var(--f-disp)}
+.sheet.good .sh-head{color:var(--good)}.sheet.bad .sh-head{color:var(--bad)}
+.sh-head .xp{font:600 13px var(--f-mono)}
+.sh-ans{display:grid;gap:3px}
+.sh-actions{display:flex;gap:10px;margin-top:6px}
+.sh-actions .btn{flex:1}
+.sh-actions .spkb{flex:none;width:50px;padding:0}
+.sh-actions svg{width:22px;height:22px}
+.sh-actions .spkb{background:var(--surface);border:1.5px solid var(--line);color:var(--primary)}
+.you{font:500 14px/1.6 var(--f-mono)}
+.you s{color:var(--bad);text-decoration-thickness:2px}
+.you .ok{color:var(--good)}
+.listen{display:flex;align-items:center;gap:12px;margin:6px 0}
+.play{width:84px;height:84px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:grid;place-items:center;box-shadow:0 4px 0 var(--primary-d);flex:none}
+.play:active{transform:translateY(2px)}
+.play svg{width:38px;height:38px}
+.slowb{padding:10px 14px;border:1.5px solid var(--line);border-radius:999px;font:600 13px var(--f-mono);background:var(--surface)}
+.slot{min-height:96px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;padding:12px;border:1.5px dashed var(--line);border-radius:8px;background:var(--surface);margin-top:14px}
+.chipw{padding:9px 12px;border:1.5px solid var(--line);border-bottom-width:3px;border-radius:8px;background:var(--surface);font:500 15px var(--f-mono)}
+.slot .chipw{background:var(--surface2)}
+.chipw.good{border-color:var(--good);background:var(--good-bg)}
+.chipw.bad{border-color:var(--bad);background:var(--bad-bg)}
+.chipw.ghost{opacity:.18;pointer-events:none}
+.bank{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.hintline{font:500 13px var(--f-mono);color:var(--muted);margin-top:8px;overflow-wrap:anywhere}
+textarea.ti{display:block;width:100%;min-height:100px;margin-top:14px;padding:12px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:500 16px/1.5 var(--f-mono);resize:none}
+.cloze{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:3px;background:var(--surface);font:500 16.5px/1.9 var(--f-mono)}
+.gap{display:inline-block;min-width:4.5ch;text-align:center;border-bottom:3px solid var(--primary);color:var(--primary);padding:0 4px}
+.gap.good{color:var(--good);border-color:var(--good)}.gap.bad{color:var(--bad);border-color:var(--bad)}
+.micwrap{display:grid;justify-items:center;gap:10px;margin:22px 0 8px;text-align:center}
+.mic{width:96px;height:96px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:grid;place-items:center;box-shadow:0 4px 0 var(--primary-d)}
+.mic svg{width:40px;height:40px}
+.mic.live{background:var(--bad);box-shadow:0 4px 0 var(--bad-d);animation:pulse 1.2s infinite}
+@keyframes pulse{0%{outline:0 solid rgba(194,58,46,.45)}100%{outline:22px solid rgba(194,58,46,0)}}
+.mic.live{outline:0 solid rgba(194,58,46,.45)}
+.heard{min-height:28px;text-align:center}
+.fc{margin-top:10px;display:grid;gap:12px}
+.fc .ans{animation:fade .25s ease-out}
+.fc .sep{border:0;border-top:1px dashed var(--line);margin:2px 0}
+.dirsw{margin-bottom:12px}
+.mgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:6px}
+.mcol{display:grid;gap:10px;align-content:start}
+.mt{padding:11px 10px;border:1.5px solid var(--line);border-bottom-width:3px;border-radius:8px;background:var(--surface);min-height:64px;font-size:13.5px;line-height:1.35;overflow-wrap:anywhere}
+.mt.en{font-size:12.5px}
+.mt.sel{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.mt.done{border-color:var(--good);background:var(--good-bg);pointer-events:none}
+.mt.shake{animation:shake .3s;border-color:var(--bad);background:var(--bad-bg)}
+.res{display:grid;gap:14px;justify-items:center;text-align:center;padding-top:6px}
+.res h2{font:700 28px var(--f-disp)}
+.res .stats{width:100%;text-align:left}
+.res .list{width:100%;text-align:left}
+.banner{width:100%;padding:12px;border-radius:6px;background:var(--signal);color:var(--on-signal);font:700 18px var(--f-disp);letter-spacing:.03em}
+.scrim{position:fixed;inset:0;background:rgba(5,12,20,.55);display:grid;place-items:center;z-index:50;padding:16px}
+.dlg{background:var(--surface);border-radius:12px;padding:20px;max-width:360px;width:100%;display:grid;gap:12px}
+.dlg h3{margin:0;font:700 22px var(--f-disp)}
+.dlg p{margin:0;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:500;z-index:60;max-width:90%;text-align:center}
+@keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+</head>
+<body>
+<div id="app"></div>
+<div id="sess" class="sess" hidden></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+const DATA={"sections":["Runway & Taxiway Condition","Weather & Environment","Communication & Identification","Taxiway & Ground Movement","Runway Operations","Navigation & ATC Instructions","Traffic, Separation, TCAS","Approach & Landing","Emergencies & Alerts","Passenger-Related Issues","Aircraft Technical Issues"],"phrases":[{"id":1,"s":0,"en":"Rime ice on RWY 26R.","ru":"Лед с инеем на полосе 26R."},{"id":2,"s":0,"en":"Snow drifts on the RWY edges.","ru":"Снежные заносы на кромках ВПП."},{"id":3,"s":0,"en":"RWY is ploughed and swept.","ru":"Полоса очищена от снега и подметена."},{"id":4,"s":0,"en":"RWY is sprayed with sand.","ru":"ВПП посыпана песком."},{"id":5,"s":0,"en":"Caution, uneven surface at the entrance to TWY A.","ru":"Внимание, неровная поверхность в начале рулежной дорожки А."},{"id":6,"s":0,"en":"Large water patches full length of the RWY 08L, no appreciable depth.","ru":"Большие лужи воды по всей длине ВПП 08L – глубина не измерена."},{"id":7,"s":0,"en":"Runway 08L is damp, dry snow patches, depth not significant. Apron and taxiways are snowed and slippery.","ru":"Полоса 08L влажная, покрыта участками сухого снега, глубина не существенна. Перрон и рулежные дорожки покрыты снегом и скользкие."},{"id":8,"s":0,"en":"Be advised of snow clearance at the aerodrome.","ru":"Для вашей информации - расчистка снега на аэродроме."},{"id":9,"s":0,"en":"RWY 08L is flooded to a depth of 2 inches at the intersection of TWY A.","ru":"ВПП 08L затоплена водой, глубиной до 2 дюймов у перекрестка рулежки А."},{"id":10,"s":0,"en":"Grass mowing in progress near RWY 24.","ru":"Производится покос травы около ВПП 24."},{"id":11,"s":0,"en":"RWY is blocked by debris of crashed plane.","ru":"Полоса заблокирована обломками разбившегося самолета."},{"id":12,"s":0,"en":"Foam carpet completed.","ru":"Покрытие пенным ковром завершено."},{"id":13,"s":0,"en":"Patches (pools) of standing water on the RWY.","ru":"На ВПП есть участки (лужи) стоячей воды."},{"id":14,"s":0,"en":"RWY 07 is rough in some places.","ru":"ВПП 07 в некоторых местах неровная."},{"id":15,"s":0,"en":"Go around, standard procedure, there's RWY lighting failure.","ru":"Уходите на второй круг по стандартной процедуре, освещение ВПП не работает."},{"id":16,"s":0,"en":"TWY 4 is partly covered with ice.","ru":"Рулежная дорожка 4 частично покрыта льдом."},{"id":17,"s":0,"en":"TWY M blocked by a wrong-turning aircraft.","ru":"Рулежная дорожка M заблокирована самолетом, повернувшим не туда."},{"id":18,"s":0,"en":"Thicker fog patches observed further along the RWY from control tower.","ru":"С вышки наблюдается местами более густой туман вдоль ВПП."},{"id":19,"s":0,"en":"Unofficial observation based on pilot report RWY 34 braking action medium to poor.","ru":"Неофициальное наблюдение на основе доклада пилота: коэффициент сцепления на ВПП 34 среднее до плохого."},{"id":20,"s":1,"en":"Heavy hail shower observed, approaching from the North.","ru":"Наблюдаются сильные осадки с градом, приближаются с севера."},{"id":21,"s":1,"en":"There is fog in patches on final. Do you need a fog dispersal system (FDS)?","ru":"На посадочной прямой местами туман, нужна ли вам система рассеивания тумана?"},{"id":22,"s":1,"en":"By 3 o'clock the fog will get thicker, the aerodrome will be closed for an indefinite time.","ru":"К 3 часам туман станет гуще, аэродром будет закрыт на неопределенное время."},{"id":23,"s":1,"en":"Report meteorological conditions observed from your aircraft.","ru":"Сообщите о метеоусловиях, наблюдаемых с вашего борта."},{"id":24,"s":1,"en":"Be informed of rain clutters over SL.","ru":"Для вашей информации – грозовые засветы над SL."},{"id":25,"s":1,"en":"ATIS Golf is now current.","ru":"ATIS Golf сейчас действует."},{"id":26,"s":1,"en":"The weather is getting worse, delay is expected for the next 3 hours.","ru":"Погода ухудшается, ожидается задержка на следующие 3 часа."},{"id":27,"s":1,"en":"Caution, wind shear reported at 600 feet 2-mile final.","ru":"Внимание, на высоте 600 футов на удалении 2 миль зафиксирован сдвиг ветра."},{"id":28,"s":1,"en":"Can you accept a crosswind of 18 knots gusting to 25?","ru":"Подходит ли вам боковой ветер 18 узлов с порывами до 25?"},{"id":29,"s":1,"en":"Suggest you hold there for a few minutes; the thunderstorm is rapidly approaching the far end of the RWY 26.","ru":"Рекомендуем оставаться на месте несколько минут, гроза быстро приближается к дальнему концу ВПП 26."},{"id":30,"s":1,"en":"Be informed of a sounding balloon in the vicinity of the aerodrome.","ru":"Будьте информированы о зондирующем шаре вблизи аэродрома."},{"id":31,"s":1,"en":"Obstacles obscured in the vicinity of the field.","ru":"Препятствия скрыты вблизи аэродрома."},{"id":32,"s":1,"en":"Tower observes heavy hail and downdraught at 2 miles final RWY 24.","ru":"На посадочной прямой ВПП 24, на удалении 2 миль, наблюдаются сильный град и нисходящие потоки."},{"id":33,"s":1,"en":"There is severe line squall on course.","ru":"Сильный шквал прямо по курсу."},{"id":34,"s":1,"en":"Tower, we encountered wind shear at 900 feet on approach to RWY 06. Airspeed loss 20 knots, strong starboard drift.","ru":"При заходе на ВПП 06 на высоте 900 футов столкнулись со сдвигом ветра. Потеря скорости 20 узлов, сильный снос вправо."},{"id":35,"s":1,"en":"The weather is below your aircraft category minimum. What are your intentions?","ru":"Погодные условия ниже минимальных для вашей категории ВС. Каковы ваши намерения?"},{"id":36,"s":1,"en":"Has the weather at your aerodrome become better?","ru":"Стала ли погода на вашем аэродроме лучше?"},{"id":37,"s":1,"en":"Has the fog in the vicinity of your field become (got) thicker?","ru":"Сгустился ли туман вблизи вашего аэродрома?"},{"id":38,"s":1,"en":"Be advised of hail hitting in progress in the vicinity of DIPAX till FL 270, radius 10 km.","ru":"Сообщаю, что в районе DIPAX идет град, до эшелона FL 270, радиус 10 км."},{"id":39,"s":1,"en":"Be advised airdrome is closed due to hail hitting.","ru":"Сообщаю, что аэродром закрыт из-за града."},{"id":40,"s":1,"en":"Where has the thunderstorm moved to?","ru":"Куда сместилась гроза?"},{"id":41,"s":1,"en":"Where is the thunderstorm coming from?","ru":"Откуда приближается гроза?"},{"id":42,"s":1,"en":"Lightning has struck the aircraft.","ru":"В самолет попала молния."},{"id":43,"s":1,"en":"Aerodrome is unsafe due to thick fog. You are allowed to land only at your discretion.","ru":"Аэродром небезопасен из-за густого тумана. Вам разрешается садиться только по собственному усмотрению."},{"id":44,"s":1,"en":"I have just avoided CB, now continue climbing FL 270, will advise reaching.","ru":"Я только что обошел кучево-дождевые облака, продолжаю набор до эшелона 270, занятие эшелона доложу."},{"id":45,"s":2,"en":"Read you with interference.","ru":"Слышу вас с помехами."},{"id":46,"s":2,"en":"Readability is poor. Send words twice.","ru":"Слышу вас плохо. Передавайте слова дважды."},{"id":47,"s":2,"en":"You were blocked / blotted out (covered by another station).","ru":"Вас заглушила другая станция. Вы были забиты."},{"id":48,"s":2,"en":"Say again, using another headset / Try box 2.","ru":"Повторите, используя другую гарнитуру / Попробуйте вторую радиостанцию."},{"id":49,"s":2,"en":"Negative altitude readout.","ru":"Нет данных о высоте."},{"id":50,"s":2,"en":"I have not identified you.","ru":"Я вас не идентифицировал."},{"id":51,"s":2,"en":"Your transmitter has a background noise.","ru":"От вашего передатчика идет фоновый шум."},{"id":52,"s":2,"en":"The communication is interrupted by statics.","ru":"Связь прерывается помехами. (треск и шумы в наушниках)"},{"id":53,"s":2,"en":"Squawk standby.","ru":"Установите код ответчика в режим ожидания."},{"id":54,"s":2,"en":"Do you have a transponder on board? Are you squawking?","ru":"На борту есть ответчик? Вы используете ответчик?"},{"id":55,"s":2,"en":"Mode \"C\" wrong indication.","ru":"Неправильный ответ по высоте."},{"id":56,"s":2,"en":"I am lost (unsure of my position), request my position.","ru":"Потеря ориентировки (не уверен в своем местоположении), прошу текущее местоположение."},{"id":57,"s":2,"en":"I read you fits and starts (now and then).","ru":"Слышу вас временами (с перебоями)."},{"id":58,"s":2,"en":"Shall I transmit in full or in part?","ru":"Передавать полностью или частично?"},{"id":59,"s":2,"en":"Permanent interference on 123.5.","ru":"Постоянные помехи на частоте 123.5."},{"id":60,"s":2,"en":"For Tashkent actual monitor 126.8.","ru":"Для текущей метеоинформации аэропорта Ташкент прослушайте частоту 126,8."},{"id":61,"s":2,"en":"Transmitting blind due to receiver failure.","ru":"Передаю блиндом (вслепую) из-за отказа приемника."},{"id":62,"s":2,"en":"Remain this / my frequency.","ru":"Оставайтесь на этой / моей частоте."},{"id":63,"s":2,"en":"Increase the power of your transmitter.","ru":"Увеличьте мощность вашего передатчика."},{"id":64,"s":2,"en":"Squawk Mayday.","ru":"Установите код ответчика 7700."},{"id":65,"s":2,"en":"Unknown aircraft, unknown aircraft at position 41 North, 65 West, speed 348, heading of 132, Squawk ident","ru":"Неопознанное воздушное судно, неопознанное воздушное судно на позиции 41° северной широты, 65° западной долготы, скорость 348, курс 132, ответчик в режиме Ident."},{"id":66,"s":3,"en":"Broken vehicle on the TWY.","ru":"На рулежной дорожке неисправное транспортное средство."},{"id":67,"s":3,"en":"You have gone too far. You missed TWY D4. Wait there for the follow-me car.","ru":"Вы заехали слишком далеко. Вы пропустили рулежную дорожку D4. Ожидайте на месте машину сопровождения."},{"id":68,"s":3,"en":"Turn in the holding bay, take the first convenient left turn onto TWY Juliet.","ru":"Развернитесь в кармане ВПП, поверните налево на первую удобную рулежную дорожку Джульет."},{"id":69,"s":3,"en":"Stop taxi, a Boeing 737 has taken a wrong turning and is blocking the TWY.","ru":"Остановите руление, Боинг 737 ошибся поворотом и заблокировал рулежную дорожку."},{"id":70,"s":3,"en":"You'll have to wait until a tug pushes him back beyond the next intersection.","ru":"Вам нужно подождать, пока тягач отбуксирует его за следующий перекресток."},{"id":71,"s":3,"en":"Can you move forward under your own power, 50 meters or so until you pass the next intersection?","ru":"Можете ли вы самостоятельно проехать вперед 50 метров, чтобы освободить следующий перекресток?"},{"id":72,"s":3,"en":"Speed up (expedite) taxi.","ru":"Ускорьте руление."},{"id":73,"s":3,"en":"Hold in run-up area.","ru":"Ожидайте в зоне прогрева двигателей."},{"id":74,"s":3,"en":"Go around (make a missed approach procedure).","ru":"Уходите на второй круг (выполняйте процедуру ухода)."},{"id":75,"s":3,"en":"Taxi via TWY C, backtrack, and line up RWY 07.","ru":"Рулите по РД Чарли, затем разворачивайтесь и занимайте исполнительный ВПП 07."},{"id":76,"s":3,"en":"Could you taxi about 15 meters (forward) to keep the taxiway clear for Boeing 737?","ru":"Не могли бы вы прорулить примерно 15 метров вперед, чтобы освободить рулежную дорожку для Боинга 737?"},{"id":77,"s":3,"en":"Bleed-off TWY, by-pass TWY.","ru":"Соединительная РД, обводная РД."},{"id":78,"s":3,"en":"There is a B-747 parking behind you. After him, pushback approved abeam stand B10.","ru":"Позади вас стоит B-747. После него разрешен толчок носом назад напротив стоянки B10."},{"id":79,"s":3,"en":"Pull in to the right; there is an A-320 overtaking you on your left.","ru":"Прижмитесь вправо, вас обгоняет A-320 слева."},{"id":80,"s":3,"en":"Request progressive taxi instructions. (Include step-by-step routing directions (AIM).)","ru":"Просим подробный маршрут по ходу выполнения руления."},{"id":81,"s":3,"en":"We have one passenger missing.","ru":"У нас отсутствует один пассажир."},{"id":82,"s":3,"en":"We wish to delay departure due to passenger baggage identification process.","ru":"Мы хотим отложить вылет из-за процесса идентификации багажа пассажиров."},{"id":83,"s":3,"en":"We are having a problem with a tow bar. We are waiting for another one.","ru":"У нас проблема с буксировочной штангой (водило). Ждем замену."},{"id":84,"s":3,"en":"We are going to be delayed for a while. The tug seems to have broken down.","ru":"У нас будет небольшая задержка. Похоже, тягач вышел из строя."},{"id":85,"s":3,"en":"A large dog has just crossed the TWY ahead of us. Could you send someone to catch it?","ru":"Большая собака только что пересекла рулежную дорожку перед нами. Можете кого-нибудь прислать, чтобы ее поймать?"},{"id":86,"s":3,"en":"Do you need a ladder?","ru":"Вам нужна лестница (стремянка)?"},{"id":87,"s":3,"en":"Revised door-open time 45.","ru":"Скорректированное время открытия дверей: 45 минут."},{"id":88,"s":3,"en":"Could we start up quickly, please? We have live stock in the hold.","ru":"Можем ли мы быстрее начать запуск? У нас живой груз в грузовом отсеке."},{"id":89,"s":3,"en":"Why is our departure delayed?","ru":"Почему наша отправка задерживается?"},{"id":90,"s":3,"en":"Why do I have to expedite taxiing?","ru":"Почему я должен ускорить руление?"},{"id":91,"s":3,"en":"How long is our departure delayed?","ru":"На сколько задерживается наш вылет?"},{"id":92,"s":3,"en":"Delay is not determined for the moment—there seems to be a problem with the generators.","ru":"Задержка пока не определена — похоже, есть проблема с генераторами."},{"id":93,"s":3,"en":"Take the second turn on the right","ru":"На втором повороте направо"},{"id":94,"s":3,"en":"Make next right turn","ru":"На следующем (первом) повороте направо"},{"id":95,"s":3,"en":"We are going to be delayed due to catering (the catering truck has not brought the food).","ru":"Ожидаем задержку из-за недоставки питания на борт."},{"id":96,"s":3,"en":"You will have to wait until the tug pushes him back beyond the next intersection.","ru":"Вам придется подождать пока тягач не отбуксирует его за следующий перекресток."},{"id":97,"s":3,"en":"Approaching holding point RWY 29, request return to stand, brakes are overheating.","ru":"Занимаем предварительный к полосе 29, просим разрешения вернуться на стоянку, тормоза перегреваются."},{"id":98,"s":3,"en":"Clearance void if not off by 35","ru":"Разрешение истекает если не взлетите к 35 минуте"},{"id":99,"s":4,"en":"Hold short of RWY 02L.","ru":"Остановитесь перед ВПП 02 левая."},{"id":100,"s":4,"en":"Vacate RWY 16 via high-speed TWY 3 / Main TWY.","ru":"Освободите ВПП 16 через скоростную рулежную дорожку 3 / основную рулежную дорожку."},{"id":101,"s":4,"en":"Parallel departures now in operation.","ru":"Сейчас действуют параллельные вылеты."},{"id":102,"s":4,"en":"Due to aggressive RWY operation, departures may be delayed up to 90 min.","ru":"Из-за интенсивной эксплуатации ВПП вылеты могут быть задержаны до 90 минут."},{"id":103,"s":4,"en":"Disabled aircraft on RWY 23L.","ru":"На ВПП 23L находится неисправное воздушное судно."},{"id":104,"s":4,"en":"Take the first convenient turn off, then turn right into TWY Bravo.","ru":"Сверните на первую удобную рулежную дорожку, затем поверните направо на РД Браво."},{"id":105,"s":4,"en":"Stop immediately, I say again stop immediately, there is a vehicle on RWY 26.","ru":"Остановитесь немедленно, повторяю, остановитесь немедленно, на ВПП 26 находится транспортное средство."},{"id":106,"s":4,"en":"Keep slightly right while taxiing due construction work on left side of the RWY 08R.","ru":"Держитесь немного правее при рулении из-за строительных работ с левой стороны ВПП 08R."},{"id":107,"s":4,"en":"Single RWY operation.","ru":"В работе одна ВПП."},{"id":108,"s":4,"en":"TORA (Take-Off Run Available) RWY09L from intersection D 3000m.","ru":"Располагаемая дистанция разбега с ВПП 09 левая от пересечения D составляет 3000 метров."},{"id":109,"s":4,"en":"Switch off the sequence flashers.","ru":"Выключите бегущие огни."},{"id":110,"s":4,"en":"Make U-turn RWY 08L, backtrack and vacate via TWY 2.","ru":"Развернитесь на ВПП 08L, рулите с обратным курсом (выруливайте обратно) и освободите через РД 2."},{"id":111,"s":4,"en":"Cleared for ILS approach RWY 09 left. Sidestep to RWY 09 right.","ru":"Разрешен заход по ИЛС на ВПП 09 левая. Боковой маневр на ВПП 09 правая."},{"id":112,"s":4,"en":"We left chocks on RWY 02R. Send someone to pick them up.","ru":"Мы оставили колодки на ВПП 02П. Пошлите кого-нибудь забрать их."},{"id":113,"s":4,"en":"Dim approach lights to 50 per cent.","ru":"Уменьшите яркость посадочных огней до 50 процентов."},{"id":114,"s":4,"en":"Your time of departure expires at 12:30.","ru":"Ваше время отбытия истекает в 12:30."},{"id":115,"s":4,"en":"Take off denied / clearance void (USA) if not airborne at 17.","ru":"Взлет запрещается, если не взлетите в 17 минут."},{"id":116,"s":4,"en":"Why have you delayed our departure?","ru":"Почему вы задержали наш вылет?"},{"id":117,"s":4,"en":"What is the usable length of RWY 27?","ru":"Какова доступная длина ВПП 27?"},{"id":118,"s":4,"en":"Request returning to stand, unable to start-up engine.","ru":"Запрашиваем возвращение на стоянку, не можем запустить двигатель."},{"id":119,"s":4,"en":"Permission for your flight is not granted.","ru":"Разрешение на ваш полет не выдано."},{"id":120,"s":4,"en":"There is a 55 min delay due to computer failure. Your slot time is 09.45.","ru":"Задержка на 55 минут из-за сбоя компьютера. Ваш слот на 09:45."},{"id":121,"s":4,"en":"Request departure RWY 08L intersection M.","ru":"Прошу взлет с перекрестка М ВПП 08 левая."},{"id":122,"s":4,"en":"Take off aborted due to tyre blow out. We slid slightly off the RWY 10.","ru":"Взлет прерван из-за лопнувшей шины. Мы немного съехали с ВПП."},{"id":123,"s":4,"en":"Stopping, take off abandoned due to engine failure.","ru":"Останавливаемся, взлет прерван из-за отказа двигателя."},{"id":124,"s":4,"en":"Why did you reject take-off?","ru":"Почему вы прервали взлет?"},{"id":125,"s":4,"en":"We seem to have a nose gear tyre blow out on landing. Request a tug to tow us to the apron.","ru":"Кажется, на посадке лопнула покрышка на носовой стойке шасси. Запрашиваем тягач для буксировки на перрон."},{"id":126,"s":4,"en":"We aquaplaned after touchdown and have at least 2 tyres blown out on right main gear.","ru":"После касания произошло гидроглиссирование, и на правой основной стойке шасси лопнули как минимум 2 покрышки."},{"id":127,"s":4,"en":"Large flock of birds (bird congestion) observed crossing left to right at the upwind end of RWY 24.","ru":"При взлете с ВПП 24 на начальном этапе набора наблюдалась большая стая птиц, пересекавшая слева направо."},{"id":128,"s":5,"en":"Report your position over AMDAR, which is mandatory (CRP- compulsory reporting point).","ru":"Доложите ваше место над точкой AMDAR, которая является точкой обязательного донесения."},{"id":129,"s":5,"en":"Offset track 2 miles left is approved.","ru":"Разрешено следовать 2 мили параллельно заданному маршруту."},{"id":130,"s":5,"en":"Verify your assigned altitude (pilots should check and confirm assigned altitude).","ru":"Проверьте и подтвердите вашу заданную высоту."},{"id":131,"s":5,"en":"Unable clearance into RVSM airspace, maintain (or descend to, or climb to) FL...","ru":"Нет разрешения на вход в воздушное пространство RVSM, сохраняйте (или снижайтесь, или поднимайтесь до) эшелона…"},{"id":132,"s":5,"en":"For the time being maintain (remain) FL ............","ru":"Пока оставайтесь на этом эшелоне."},{"id":133,"s":5,"en":"Level off (at) FL 150.","ru":"Перейдите в горизонтальный полет на эшелоне 150."},{"id":134,"s":5,"en":"You are released on frequency.............","ru":"Вы переводитесь на частоту............."},{"id":135,"s":5,"en":"Maintain FL 370 proceed to OGODA, hold north-west, inbound radial 288, all turns right, legs at your discretion.","ru":"Сохраняйте эшелон 370, следуйте в точку OGODA, ждите северо-западнее, на радиале 288, все развороты правые, длина участков на ваше усмотрение."},{"id":136,"s":5,"en":"Expect radar vector across the final approach course, fly heading 340 for spacing.","ru":"Ожидайте векторение с пересечением посадочного курса, выдерживайте курс 340 для создания интервала."},{"id":137,"s":5,"en":"You have crossed the final approach course. Turn right immediately heading 240 to join the localizer.","ru":"Вы пересекли посадочный курс. Разворачивайтесь вправо на курс 240 немедленно, чтобы захватить курсовой луч ИЛС."},{"id":138,"s":5,"en":"Will it suit you to align 5 NM? (Arrival procedure)","ru":"Устроит ли вас спрямление на 5 морских миль?"},{"id":139,"s":5,"en":"Can you slope down?","ru":"Можете ли вы ускорить снижение?"},{"id":140,"s":5,"en":"Do not exceed speed 250 knots (not greater/or less).","ru":"Не превышайте скорость 250 узлов (не больше/или меньше)."},{"id":141,"s":5,"en":"Make a right-hand orbit for spacing / orbit right for spacing.","ru":"Выполните правую орбиту для создания интервала."},{"id":142,"s":5,"en":"Turn right 90° for identification.","ru":"Поверните направо на 90° для опознования."},{"id":143,"s":5,"en":"Maintain present heading until FIR boundary.","ru":"Сохраняйте текущий курс до границы РПИ."},{"id":144,"s":5,"en":"Reduce to approach (circuit) speed.","ru":"Уменьшите скорость до посадочной (или схемной)."},{"id":145,"s":5,"en":"Continue / fly RWY heading for 4 min.","ru":"Продолжайте/летите по курсу ВПП в течение 4 минут."},{"id":146,"s":5,"en":"Resume own navigation.","ru":"Возвращайтесь к самостоятельной навигации."},{"id":147,"s":5,"en":"Request 10° heading change to avoid build-up.","ru":"Запрашиваем изменение курса на 10°, чтобы обойти грозовое образование."},{"id":148,"s":5,"en":"Could we have slightly lower level? We are experiencing moderate turbulence at FL 340.","ru":"Можно нам занять эшелон ниже? На эшелоне 340 умеренная турбулентность."},{"id":149,"s":5,"en":"We have just passed through some severe turbulence. What kind of traffic is there ahead of us?","ru":"Мы только что прошли через сильную турбулентность. Какой самолет впереди нас?"},{"id":150,"s":5,"en":"It must have been wake turbulence, there is a 747 ahead, although normal separation was provided.","ru":"Это, должно быть, спутный след. Впереди Боинг 747, хотя установленный интервал был соблюден."},{"id":151,"s":5,"en":"VOR approach is not available due to equipment failure.","ru":"Заход по VOR недоступен из-за отказа оборудования."},{"id":152,"s":5,"en":"Continue visually or go around.","ru":"Продолжайте визуально или уходите на второй круг."},{"id":153,"s":5,"en":"Advisory to all concerned.","ru":"Сообщение всем, кого касается."},{"id":154,"s":5,"en":"Report RWY in sight (ground contact).","ru":"Доложите, как увидите ВПП (или контакт с землей)."},{"id":155,"s":5,"en":"Keep the plane ahead of you in sight.","ru":"Удерживайте самолет перед вами в поле зрения."},{"id":156,"s":5,"en":"Glide slope below 300 m is unreliable. You have to make a visual approach RWY 16.","ru":"Глиссада ниже 300 м ненадежна. Вам необходимо выполнить визуальный заход на ВПП 16."},{"id":157,"s":5,"en":"Confirm your heading and continue further descent to FL 190.","ru":"Подтвердите курс и продолжайте снижение до эшелона 190."},{"id":158,"s":5,"en":"FL 330 is unavailable.","ru":"Эшелон 330 недоступен."},{"id":159,"s":5,"en":"Is FL 300 acceptable for you?","ru":"Подходит ли вам эшелон 300?"},{"id":160,"s":5,"en":"Remain outside the controlled airspace. Expect clearance at 35.","ru":"Оставайтесь вне контролируемого пространства. Ожидайте разрешение в 35 минут."},{"id":161,"s":5,"en":"Turn left heading 160°. It will take you to LT, 25 miles to run.","ru":"Развернитесь влево, курс 160°. Это выведет вас на точку LT, удаление 25 миль."},{"id":162,"s":5,"en":"Leveling FL 150.","ru":"Сохраняю эшелон 150."},{"id":163,"s":5,"en":"Do not stray away.","ru":"Не отклоняйтесь от трассы."},{"id":164,"s":5,"en":"FL 330 is not available due to restrictions. Alternatives are FL 350 and FL 310. Advise your decision.","ru":"Эшелон 330 недоступен из-за ограничений. Доступны эшелоны 350 и 310. Сообщите ваше решение."},{"id":165,"s":5,"en":"Overfly the hazardous area at flight level 390 not lower.","ru":"Перелетайте опасную зону на эшелоне 390, не ниже."},{"id":166,"s":5,"en":"Request level change due to severe turbulence (icing).","ru":"Запрашиваем смену эшелона из-за сильной турбулентности (обледенения)."},{"id":167,"s":5,"en":"Request level change due to clear air turbulence.","ru":"Запрашиваем смену эшелона из-за турбулентности в ясном небе."},{"id":168,"s":5,"en":"There is severe turbulence at FL 300. Request FL 250 instead of 300.","ru":"На эшелоне FL 300 сильная турбулентность. Запрашиваем FL 250 вместо FL 300."},{"id":169,"s":5,"en":"Request a left turn out.","ru":"Запрашиваем левый разворот после взлета."},{"id":170,"s":5,"en":"Are there any restrictions on our heading?","ru":"Есть ли ограничения на наш курс?"},{"id":171,"s":5,"en":"What is the lowest safe level?","ru":"Каков минимальный безопасный эшелон?"},{"id":172,"s":5,"en":"Cleared to avoid weather only within the route (гроза).","ru":"Разрешается обходить грозу только в пределах маршрута."},{"id":173,"s":5,"en":"What heading must I set to come back on track?","ru":"Какой курс мне установить, чтобы вернуться на маршрут?"},{"id":174,"s":5,"en":"Penetrating top of clouds.","ru":"Входим в верхнюю кромку облачности."},{"id":175,"s":5,"en":"Coordinate transfer of control with ATC units.","ru":"Согласуйте передачу управления с подразделениями УВД."},{"id":176,"s":5,"en":"For your information, drone (UAV - Unmanned Aerial Vehicle) in the vicinity of SR, radius 10 km, height 350 m from 4:00 till 15:00.","ru":"Для информации: в районе SR дрон (БПЛА), радиус 10 км, высота 350 м, с 4:00 до 15:00."},{"id":177,"s":5,"en":"For your information, paragliding in the vicinity of Yusufxona/Beldersay, height 30 m from 4:00 till 15:00.","ru":"Для информации: в районе Yusufxona/Beldersay проходят полеты на парапланах, высота 30 м, с 4:00 до 15:00."},{"id":178,"s":5,"en":"For your information. Light firing available.","ru":"Для вашей информации, возможна стрельба из легкого вида оружия."},{"id":179,"s":5,"en":"Why are you losing altitude so rapidly?","ru":"Почему вы теряете высоту так стремительно?"},{"id":180,"s":5,"en":"Why didn’t you report passing MIRZO?","ru":"Почему не доложили прохождение MIRZO?"},{"id":181,"s":5,"en":"Spell position where we shall proceed to.","ru":"Назовите по буквам точку (пункт), куда мы должны следовать."},{"id":182,"s":6,"en":"Traffic crossing left to right at FL 300.","ru":"Борт пересекает слева направо на эшелоне 300."},{"id":183,"s":6,"en":"Traffic same direction 32 miles behind you, moving faster. FL 120.","ru":"Попутный борт на 32 мили позади вас, движется быстрее. Эшелон 120."},{"id":184,"s":6,"en":"Longitudinal separation will be 16 miles.","ru":"Продольное эшелонирование составит 16 миль."},{"id":185,"s":6,"en":"Lateral separation will be 11 miles.","ru":"Боковое эшелонирование составит 11 миль."},{"id":186,"s":6,"en":"Traffic will be climbing through your level, distance 20 miles.","ru":"Борт будет набирать высоту через ваш эшелон, расстояние 20 миль."},{"id":187,"s":6,"en":"Traffic 12 o'clock.","ru":"Борт прямо по курсу (12 часов)."},{"id":188,"s":6,"en":"Traffic 6 o'clock.","ru":"Борт сзади (6 часов)."},{"id":189,"s":6,"en":"Traffic 10 o’clock crossing left to right, height unknown. If not in sight/ negative contact turn left heading 270.","ru":"Борт на 30 градусов слева пересекает слева направо, высота неизвестна. В случае если борт не наблюдаете, поверните влево курсом 270."},{"id":190,"s":6,"en":"Unknown traffic, opposite direction 11 o'clock, 9 miles FL 150.","ru":"Неизвестное воздушное движение, встречное направление, на 11 часов, расстояние 9 миль, эшелон 150."},{"id":191,"s":6,"en":"Lose time to arrive at 50.","ru":"Затяните время, чтобы прибыть в точку в 50 минут."},{"id":192,"s":6,"en":"Avoiding action: a left turn of 30 degrees will take you well clear.","ru":"Маневр расхождения: левый разворот на 30 градусов обеспечит расхождение."},{"id":193,"s":6,"en":"Reduce speed for the benefit of preceding aircraft.","ru":"Уменьшите скорость для создания благоприятных условий следующему впереди самолету."},{"id":194,"s":6,"en":"Reduced separation. Cleared to land after the preceding aircraft.","ru":"Сокращенный интервал. Разрешена посадка за предыдущим самолетом."},{"id":195,"s":6,"en":"Where are we identified?","ru":"Где мы идентифицированы?"},{"id":196,"s":6,"en":"Are there any restrictions on our heading?","ru":"Есть ли ограничения на наш курс?"},{"id":197,"s":6,"en":"We have just had to dive to avoid colliding with converging traffic. It was a very close thing. I'll check if the passengers are OK.","ru":"Мы только что были вынуждены уйти в снижение (поднырнуть), чтобы избежать столкновения с сближающимся бортом. Это было очень близко. Проверю состояние пассажиров."},{"id":198,"s":6,"en":"Unable to comply, TCAS resolution advisory.","ru":"Не можем выполнить, рекомендации TCAS по разрешению угрозы столкновения."},{"id":199,"s":6,"en":"TCAS RA (resolution advisory). Clear of traffic. Request climb to FL 150.","ru":"Набрал высоту по TCAS (или снизился), с бортом разошлись. Прошу вернуться на эшелон 150."},{"id":200,"s":6,"en":"TCAS RA. Returning to FL 150.","ru":"Сработал TCAS RA. Возвращаюсь на эшелон 150."},{"id":201,"s":6,"en":"Now clear of traffic. Resume own navigation.","ru":"С бортом разошлись. Возвращайтесь к самостоятельной навигации."},{"id":202,"s":6,"en":"Maintain 10 min separation from Airbus 320.","ru":"Сохраняйте 10 минутный интервал от Airbus 320."},{"id":203,"s":6,"en":"We had a near miss with a low-flying fighter.","ru":"У нас было опасное сближение с истребителем, летящим на малой высоте."},{"id":204,"s":6,"en":"We have had a dangerous near miss with converging traffic. The safety separation has not been provided. We intend to file an air miss report.","ru":"Произошло опасное сближение с другим бортом. Безопасный интервал не был обеспечен. Планируем подать донесение об опасном сближении."},{"id":205,"s":6,"en":"We were forced to dive to avoid colliding with converging traffic.","ru":"Мы были вынуждены уйти в резкое снижение, чтобы избежать столкновения с встречным бортом."},{"id":206,"s":6,"en":"An aircraft has just overtaken us. There was no necessary separation.","ru":"Борт только что обогнал нас. Не было необходимого интервала."},{"id":207,"s":6,"en":"Could you see identification and type of near-missing aircraft?","ru":"Увидели ли вы идентификацию и тип сближающегося борта?"},{"id":208,"s":7,"en":"I'll keep you advised.","ru":"Я буду держать вас в курсе."},{"id":209,"s":7,"en":"You are steady on the glide path.","ru":"Вы стабилизировались на глиссаде."},{"id":210,"s":7,"en":"Samarkand cannot be used as alternate.","ru":"Самарканд не может использоваться в качестве запасного аэродрома."},{"id":211,"s":7,"en":"Why are we directed to alternate?","ru":"Почему нас направляют на запасной?"},{"id":212,"s":7,"en":"Do you expect any difficulties on landing?","ru":"Ожидаете ли вы какие-либо трудности при посадке?"},{"id":213,"s":7,"en":"Are you familiar with NDB/ILS/VOR DME approach to RWY 08L?","ru":"Вы знакомы с заходом на посадку на ВПП 08L по NDB/ILS/VOR DME?"},{"id":214,"s":7,"en":"In case of going around, climb on RWY heading to altitude 1300 ft.","ru":"В случае ухода на второй круг выполняйте набор по курсу ВПП до высоты 1300 футов."},{"id":215,"s":7,"en":"Cleared low pass, minimum descent height 165 ft, after passing Tower climb on RWY heading 4000 ft, at 660 ft change to RADAR 119.4.","ru":"Разрешен низкий пролет, минимальная высота снижения 165 футов, после пролета вышки наберите высоту по курсу ВПП 4000 футов, на 660 футах работайте с Подходом на 119.4."},{"id":216,"s":7,"en":"You are landing on the wrong RWY.","ru":"Вы заходите на неправильную ВПП."},{"id":217,"s":7,"en":"Circle to land.","ru":"Заход с круга."},{"id":218,"s":7,"en":"VOR approach is not available due to equipment failure.","ru":"Заход по VOR недоступен из-за отказа оборудования."},{"id":219,"s":7,"en":"Report RWY in sight (ground contact).","ru":"Доложите, как увидите ВПП (визуальный контакт с землей)."},{"id":220,"s":7,"en":"Glide slope below 300 m is unreliable. You have to make a visual approach RWY 16.","ru":"Глиссада ниже 300 м ненадежна. Вам необходимо выполнить визуальный заход на ВПП 16."},{"id":221,"s":7,"en":"Request touch and go.","ru":"Запрашиваем посадку с последующим взлетом."},{"id":222,"s":7,"en":"When shall we expect approach clearance?","ru":"Когда нам ожидать разрешение на заход?"},{"id":223,"s":7,"en":"Request RWY condition","ru":"Каково состояние ВПП?"},{"id":224,"s":7,"en":"Established on ILS, RWY 08L in sight.","ru":"На курсовом маяке, ВПП 08L в поле зрения."},{"id":225,"s":7,"en":"At what altitude do we have to intercept the glide slope?","ru":"На какой высоте мы должны войти в глиссаду?"},{"id":226,"s":7,"en":"Unable to land due to high approach.","ru":"Не можем посадить самолет из-за высокого захода."},{"id":227,"s":7,"en":"Belly landing (Wheels-up landing; Landing with retracted wheels).","ru":"Посадка \"на брюхо\" (с убранными шасси)."},{"id":228,"s":7,"en":"Show (use, switch on, turn up) the approach lights on 100 per cent.","ru":"Установите яркость посадочных огней на 100 процентов."},{"id":229,"s":7,"en":"Go around, I say again go around, the weather is below minima.","ru":"Уходите на второй круг, повторяю, уходите на второй круг, погода ниже минимума."},{"id":230,"s":7,"en":"Report the reason for going around.","ru":"Сообщите причину ухода на второй круг."},{"id":231,"s":7,"en":"Make a missed approach procedure.","ru":"Выполните процедуру ухода на второй круг."},{"id":232,"s":7,"en":"You will not hit RWY 18 from your present position.","ru":"Вы не попадете на ВПП 18 с вашего текущего положения."},{"id":233,"s":7,"en":"ILS localizer is inoperative due (to) maintenance work.","ru":"Система ИЛС не работает из-за ремонтных работ."},{"id":234,"s":7,"en":"Reduce your speed to avoid holding.","ru":"Уменьшите скорость, чтобы избежать зоны ожидания."},{"id":235,"s":7,"en":"Due to traffic congestion make one right hand orbit in your present position and leave on heading 180.","ru":"Из-за большого скопления бортов выполните вираж вправо с вашего текущего местоположения и покиньте курсом 180."},{"id":236,"s":7,"en":"Blink your landing lights.","ru":"Помигайте вашими посадочными огнями."},{"id":237,"s":8,"en":"Your aircraft engine is trailing smoke.","ru":"От двигателя вашего самолета идет дым."},{"id":238,"s":8,"en":"Execute instructions immediately upon receipt.","ru":"Выполняйте указания сразу после получения."},{"id":239,"s":8,"en":"Left engine is on fire. Request radar vectors for backcourse landing.","ru":"Левый двигатель в огне. Прошу векторение на обратный заход."},{"id":240,"s":8,"en":"Your company has informed us you may have a bomb on board.","ru":"Ваша авиакомпания сообщила нам, что у вас на борту может быть бомба."},{"id":241,"s":8,"en":"Unable RVSM due equipment.","ru":"Выдерживать RVSM не могу из-за неисправности оборудования."},{"id":242,"s":8,"en":"Negative RVSM state aircraft.","ru":"Самолет государственного воздушного судна без допуска к RVSM."},{"id":243,"s":8,"en":"Left engine is losing power.","ru":"Левый двигатель теряет мощность."},{"id":244,"s":8,"en":"Smoke of unknown origin in passengers' compartment.","ru":"Дым неизвестного происхождения в пассажирском салоне."},{"id":245,"s":8,"en":"We are low on fuel (short of fuel). Is it possible to make a straight-in approach?","ru":"У нас мало топлива. Возможен ли прямой заход на посадку?"},{"id":246,"s":8,"en":"We have engine failure, have to make forced landing. Where shall we dump fuel?","ru":"У нас отказ двигателя, вынуждены совершить аварийную посадку. Где можно слить топливо?"},{"id":247,"s":8,"en":"We have severe fuel leak, have to return to base.","ru":"У нас сильная утечка топлива, вынуждены вернуться на базу."},{"id":248,"s":8,"en":"Mayday, Mayday, Mayday, Tashkent Tower, UZB 120 have intercepted Mayday from Lufthansa 8390, engine failure forced landing at your aerodrome. 8 miles west of TKT VOR FL 250 descending heading 120.","ru":"Мэйдэй, Мэйдэй, Мэйдэй, Ташкент Вышка, UZB 120 перехватил сигнал бедствия от Lufthansa 8390, отказ двигателя, аварийная посадка на вашем аэродроме. 8 миль к западу от TKT VOR, эшелон 250, снижается, курс 120."},{"id":249,"s":8,"en":"Request emergency landing, the cabin is decompressed (due to depressurization).","ru":"Запрашиваем аварийную посадку, разгерметизация кабины."},{"id":250,"s":8,"en":"Unable to extinguish fire, ditching.","ru":"Не можем потушить пожар, вынуждены сесть на воду (приводняемся)."},{"id":251,"s":8,"en":"We have fire in the rear (forward) toilets, descending FL 310, request emergency landing.","ru":"Пожар в заднем (переднем) туалете, снижаемся с эшелона FL 310, запрашиваем аварийную посадку."},{"id":252,"s":8,"en":"Engine No.1 has failed at take-off. Engine is dead (has failed).","ru":"Отказ двигателя №1 при взлете."},{"id":253,"s":8,"en":"We need a fire brigade (guard) upon (on; by) arrival.","ru":"Нам нужна пожарная команда по прибытии."},{"id":254,"s":8,"en":"Bird has struck left engine.","ru":"Птица попала в левый двигатель."},{"id":255,"s":8,"en":"We are forced by armed men to a new destination.","ru":"Вооруженные люди заставляют нас лететь в другой пункт назначения."},{"id":256,"s":8,"en":"Mayday, Mayday, Mayday, UZB 767 engine is burning, forced landing, unable to extinguish fire.","ru":"Майдей, Майдей, Майдей, UZB 767, горит двигатель, вынужденная посадка, пожар не можем потушить."},{"id":257,"s":8,"en":"Activating escape slides / chutes, request emergency services.","ru":"Активируем аварийные трапы, запрашиваем экстренные службы."},{"id":258,"s":8,"en":"Declare emergency on board.","ru":"Сообщаю об аварийной ситуации на борту."},{"id":259,"s":8,"en":"Fire extinguished, cancel distress.","ru":"Пожар потушен, отменяем сигнал бедствия."},{"id":260,"s":8,"en":"Unable to control pressurization, cabin altitude is rising fast, request immediate descent to FL 100.","ru":"Не можем контролировать герметизацию, высота в кабине быстро увеличивается, запрашиваем немедленное снижение до эшелона 100."},{"id":261,"s":8,"en":"We have lost all electrical power, except the emergency circuit. Request to divert immediately to Newbridge.","ru":"У нас полное обесточивание за исключением аварийной цепи. Прошу немедленную посадку в Ньюбридже."},{"id":262,"s":8,"en":"We need urgent assistance.","ru":"Нам нужна срочная помощь."},{"id":263,"s":8,"en":"Emergency services alerted.","ru":"Аварийные службы оповещены."},{"id":264,"s":8,"en":"We want to send a message to your Government. Are you ready to copy?","ru":"Мы хотим передать сообщение вашему правительству. Вы готовы записывать?"},{"id":265,"s":8,"en":"There is an occurrence of unlawful interference with the aircraft.","ru":"Произошло незаконное вмешательство в управление воздушным судном."},{"id":266,"s":8,"en":"Hijack. (I have been hijacked).","ru":"На меня совершено нападение (угон самолета)."},{"id":267,"s":8,"en":"My undercarriage is burning. Trying to tear off the flame.","ru":"Горит шасси. Пытаемся сбить пламя."},{"id":268,"s":8,"en":"An engine is probably burning. We activated the fire extinguisher.","ru":"Вероятно, горит двигатель. Мы активировали огнетушитель."},{"id":269,"s":8,"en":"I have fire warning at one of the engines. Please, advise the fire brigade first of all and then all other appropriate services. I have stopped taxiing. We will operate the fire extinguisher and disembark the passengers.","ru":"Имеем сигнал о пожаре одного из двигателей. Пожалуйста, сообщите, прежде всего пожарной команде, а затем всем соответствующим службам. Я прекратил руление. Мы будем работать с огнетушителем и высаживать пассажиров."},{"id":270,"s":8,"en":"You have offended rules over our territory (You do not follow the correct route).","ru":"Вы нарушили правила в нашем воздушном пространстве (вы не следуете правильному маршруту)."},{"id":271,"s":8,"en":"You broke the flight rules. You are an offender.","ru":"Вы нарушили правила полетов. Вы нарушитель."},{"id":272,"s":8,"en":"I'm intercepted by a military aircraft.","ru":"Меня перехватил военный самолет."},{"id":273,"s":8,"en":"We have to coordinate it with Tashkent.","ru":"Мы должны согласовать это с Ташкентом."},{"id":274,"s":8,"en":"Seems the cargo shifted.","ru":"Предполагаю, что груз сместился."},{"id":275,"s":8,"en":"Report souls (total number) on board.","ru":"Доложите общее количество человек на борту."},{"id":276,"s":9,"en":"How many persons are injured?","ru":"Сколько человек пострадало?"},{"id":277,"s":9,"en":"As a result of evasive action, some passengers have been injured (hurt, bruised). Request priority for landing and medical assistance upon arrival.","ru":"В результате маневра уклонения некоторые пассажиры пострадали (ушибы, травмы). Просим приоритетную посадку и медицинскую помощь по прибытии."},{"id":278,"s":9,"en":"We have a passenger with an acute pain/bleeding/food poisoning/asthma attack/stomach ache/breath difficulties/choked with.../unconscious/diabetic. Advise Gatwick we need medical service (a surgeon, a cardiologist) after landing.","ru":"На борту пассажир с острой болью/кровотечением/пищевым отравлением/приступом астмы/болями в животе/затрудненным дыханием/подавился/без сознания/диабетик. Сообщите в Гатвик, что нам нужна медицинская помощь (хирург, кардиолог) после посадки."},{"id":279,"s":9,"en":"We have an offending (unruly/aggressive/intoxicated) passenger on board. He refuses to fulfill the requirements of the crew members. Request police for disembarkation of the offending passenger from the aircraft upon landing at your airport.","ru":"На борту пассажир с агрессивным поведением, отказывающийся выполнять требования экипажа. Просим полицию для снятия пассажира-нарушителя с самолета по прибытии."},{"id":280,"s":9,"en":"One passenger has serious stomachache. We need an ambulance upon arrival.","ru":"У одного пассажира сильная боль в животе. Нам нужна скорая помощь по прибытии."},{"id":281,"s":9,"en":"A baby delivery has started on board.","ru":"На борту начались роды."},{"id":282,"s":9,"en":"We have a sick/disabled person on board. We need a stretcher/ambulift/wheelchair upon arrival.","ru":"У нас больной/человек с ограниченными возможностями на борту. Нам нужны носилки/подъемник/инвалидное кресло по прибытии."},{"id":283,"s":9,"en":"We have some wounded people on board.","ru":"У нас раненые на борту."},{"id":284,"s":9,"en":"What do terrorists demand? (What are the demands of the terrorists?)","ru":"Какие требования у террористов?"},{"id":285,"s":9,"en":"The terrorists demand drugs and currency.","ru":"Террористы требуют наркотики и валюту."},{"id":286,"s":9,"en":"The passengers are captured as hostages.","ru":"Пассажиры захвачены как заложники."},{"id":287,"s":9,"en":"Six passengers have been badly bruised, but there's a doctor on board, we'll continue on our route.","ru":"Шесть пассажиров получили серьезные ушибы, но на борту есть врач. Мы продолжим маршрут."},{"id":288,"s":9,"en":"Terrorists demand food, blankets, and charts.","ru":"Террористы требуют еду, одеяла и карты."},{"id":289,"s":9,"en":"Nobody was hurt, everybody is well.","ru":"Никто не пострадал, все в порядке."},{"id":290,"s":9,"en":"After landing terrorists intend to let women and children go.","ru":"После посадки террористы намерены отпустить женщин и детей."},{"id":291,"s":9,"en":"Your message will be recorded and sent to appropriate authority.","ru":"Ваше сообщение будет записано и отправлено в соответствующий орган."},{"id":292,"s":9,"en":"What door will the VIP get off?","ru":"Через какую дверь выйдет ВИП пассажир?"},{"id":293,"s":10,"en":"Unable to land due to flaps failure.","ru":"Не могу выполнить посадку из-за отказа закрылков."},{"id":294,"s":10,"en":"Unable to extend flaps (beyond 10 degrees). Request high speed approach to RWY 26, which is the longest available.","ru":"Не могу выпустить закрылки (более чем на 10 градусов). Прошу высокоскоростной заход к ВПП 26, которая является самой длинной."},{"id":295,"s":10,"en":"It might be indication failure. Will check it out.","ru":"Предполагаю отказ системы индикации. Буду проверять."},{"id":296,"s":10,"en":"Captain’s windscreen cracked due to bird strike.","ru":"Переднее стекло кабины экипажа дало трещину из-за удара птицы."},{"id":297,"s":10,"en":"We have structural damage due to explosion, extent unknown.","ru":"У нас повреждение конструкции из-за взрыва, степень неизвестна."},{"id":298,"s":10,"en":"Abnormal (unsafe) gear indications, request to observe wheels from the ground.","ru":"Ненормальная (небезопасная) индикация шасси, прошу посмотреть с земли."},{"id":299,"s":10,"en":"We deviated from the route due to navigation system failure.","ru":"Мы отклонились от маршрута из-за отказа навигационной системы."},{"id":300,"s":10,"en":"Fuel exhaustion.","ru":"Имею повышенный расход топлива."},{"id":301,"s":10,"en":"Pressure is low in fuel feed system.","ru":"Низкое давление в топливной системе."},{"id":302,"s":10,"en":"Secondary power supply is not available.","ru":"Резервный источник питания отсутствует."},{"id":303,"s":10,"en":"Engine damage due to a foreign object.","ru":"Повреждение двигателя из-за попадания постороннего предмета."},{"id":304,"s":10,"en":"Captain’s altimeter erratic, need replacement.","ru":"Высотомер командира работает неустойчиво, нуждаемся в замене."},{"id":305,"s":10,"en":"Unable to land now due to excessive weight. I intend to jettison fuel. Where can I dump fuel?","ru":"Я не могу произвести посадку сейчас из-за избыточного веса. Я намереваюсь слить горючее. Где я могу это сделать?"},{"id":306,"s":10,"en":"Speed indicator is out of order.","ru":"Индикатор скорости вышел из строя."},{"id":307,"s":10,"en":"Improper landing flare.","ru":"Неправильный выравнивающий маневр при посадке."},{"id":308,"s":10,"en":"The engine is running again, disregard the urgency message.","ru":"Двигатель снова работает, просьба отменить сообщение об экстренной ситуации."},{"id":309,"s":10,"en":"We have shut down one engine due to bird ingestion. Request descent and landing data.","ru":"Один двигатель выключен из-за попадания птицы. Запрашиваем снижение и данные для посадки."},{"id":310,"s":10,"en":"Our left main gear is jammed. Request vectors to holding area in order to complete check.","ru":"Застряла левая основная стойка шасси. Запрашиваем векторение в зону ожидания для проверки."},{"id":311,"s":10,"en":"Engine №1 has oil exhaustion.","ru":"Повышенный расход масла двигателя №1."},{"id":312,"s":10,"en":"Wind screen wipers are out of control / inoperative / failed.","ru":"Не работают стеклоочистители."},{"id":313,"s":10,"en":"We have an engine failure. We intend to return to base, but we have to dump / burn 40 tons of fuel first.","ru":"Отказ двигателя. Планируем возвращение на базу, но сначала нужно слить/выработать 40 тонн топлива."},{"id":314,"s":10,"en":"Unable to maintain my altitude on two engines due to overheating.","ru":"Не можем удерживать высоту на двух двигателях из-за перегрева."},{"id":315,"s":10,"en":"Unable to maintain FL 380 due (to) heavy. Request lower level.","ru":"Не могу выдерживать эшелон 380 из-за веса. Просим эшелон ниже."},{"id":316,"s":10,"en":"After take-off we lost speed and height.","ru":"После взлета мы потеряли скорость и высоту."},{"id":317,"s":10,"en":"We have severe engine damage.","ru":"У нас серьезные повреждения двигателя."},{"id":318,"s":10,"en":"Fuel consumption system failure.","ru":"Отказ системы расхода топлива."},{"id":319,"s":10,"en":"We have fuel pump failure.","ru":"Отказ топливного насоса."},{"id":320,"s":10,"en":"Right engine is cut off.","ru":"Правый двигатель выключен."},{"id":321,"s":10,"en":"Engine No.1 oil temperature is excessively high.","ru":"Температура масла в двигателе №1 слишком высокая."},{"id":322,"s":10,"en":"Engine is restarted/relit (is running again).","ru":"Двигатель перезапущен (работает снова)."},{"id":323,"s":10,"en":"I have sunk / got bogged down, will you send a tractor to pull us away?","ru":"Я застрял, пришлите тягач, чтобы вытащить нас."},{"id":324,"s":10,"en":"The right gear bogged down. Request passenger steps and busses to take passengers to terminal.","ru":"Правая стояка шасси застряла. Запрашиваю трапы и автобусы, чтобы отвезти пассажиров в аэровокзал."},{"id":325,"s":10,"en":"Idle reverse thrust.","ru":"Реверсивная тяга на холостом ходу."},{"id":326,"s":10,"en":"No.1 engine change is required upon arrival.","ru":"Необходима замена двигателя №1 по прибытии."},{"id":327,"s":10,"en":"I am low on fuel (I am short of fuel; I have a fuel shortage).","ru":"У меня мало топлива."},{"id":328,"s":10,"en":"We have to make off-field landing.","ru":"Мы вынуждены совершить посадку вне аэродрома."},{"id":329,"s":10,"en":"Suspecting fire in rear baggage compartment. Warning light is on.","ru":"Подозреваем пожар в заднем багажном отделении. Загорелась индикация пожара."},{"id":330,"s":10,"en":"We have a problem with air-cooling system, hot air from engine is getting inside the passenger compartment.","ru":"У нас проблема с системой охлаждения. Горячий воздух из двигателя поступает в пассажирский салон."},{"id":331,"s":10,"en":"You will have to burn out fuel (to jettison, to dump fuel) 5 miles north of the field.","ru":"Вам придется выработать топливо (или сбросить его) в 5 милях к северу от аэродрома."},{"id":332,"s":10,"en":"Engine No.2 shut down due to oil leak.","ru":"Мы выключили двигатель номер 2 из-за утечки масла."},{"id":333,"s":10,"en":"Landing gear down but may not be locked. We intend to make a low pass near the Tower to have the undercarriage checked.","ru":"Шасси выпущены, но возможно не зафиксированы. Планируем малый проход рядом с вышкой для проверки шасси."},{"id":334,"s":10,"en":"Request low pass, we suspect undercarriage problem. Have a look from the ground.","ru":"Запрашиваем малый проход, подозреваем неисправность шасси. Посмотрите с земли."},{"id":335,"s":10,"en":"Your landing gear seems to be completely extended/ entirely missing.","ru":"Ваше шасси кажется полностью выпущено/ полностью отсутствует."},{"id":336,"s":10,"en":"We need water for wheels cooling.","ru":"Нам необходима вода для охлаждения колес"},{"id":337,"s":10,"en":"All operations are normal now.","ru":"Все работает исправно."}]};
+const ROMAN=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI'];
+const SECT=DATA.sections;
+const FIX={128:'Report your position over AMDAR, which is a compulsory reporting point (CRP).'};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const rnd=n=>Math.floor(Math.random()*n);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmt=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const today=()=>fmt(new Date());
+
+/* ---------- icons ---------- */
+const IC={
+ plane:'<path d="M21 15v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V8l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-6.5L21 15z"/>',
+ home:'<path d="M3 11 12 3l9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9z"/>',
+ grid:'<rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/>',
+ book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5z"/><path d="M4 19a2 2 0 0 1 2-2h13"/>',
+ chart:'<path d="M5 20V11M12 20V4M19 20v-6M2 20h20"/>',
+ flame:'<path d="M12 22c4 0 7-2.7 7-6.5 0-3-1.8-4.800-3.300-6.300-.4 1.500-1.300 2.400-2.300 2.800.4-3.200-.9-6.200-4.400-9 .1 3.200-1.600 4.900-3 6.500C4.800 11.200 5 13.200 5 15.500 5 19.300 8 22 12 22z"/>',
+ close:'<path d="M6 6l12 12M18 6 6 18"/>',
+ cards:'<rect x="3" y="7" width="14" height="12" rx="2"/><path d="M7 4h12a2 2 0 0 1 2 2v10"/>',
+ quiz:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.500 2.300c-.7.4-1 .9-1 1.700M12 17h.01"/>',
+ swap:'<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
+ blocks:'<rect x="3" y="10" width="7" height="7" rx="1.5"/><rect x="12" y="5" width="9" height="7" rx="1.5"/><rect x="10" y="15" width="11" height="5" rx="1.5"/>',
+ keys:'<rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
+ gap:'<path d="M3 12h5M16 12h5"/><rect x="9" y="9" width="6" height="6" rx="1" stroke-dasharray="2 2"/>',
+ spk:'<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.500 9a4 4 0 0 1 0 6M19 6.500a8 8 0 0 1 0 11"/>',
+ pairs:'<rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="13" width="7" height="7" rx="1.5"/><path d="M10 7.500h2a2 2 0 0 1 2 2V13"/>',
+ bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>',
+ mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+ target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.200"/>'
+};
+const ic=(n,c='')=>'<svg class="'+c+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+IC[n]+'</svg>';
+
+/* ---------- phrase data ---------- */
+function core(en){
+  let t=en.replace(/\(([a-z]{1,4})\)/g,'$1').replace(/\([^)]*\)/g,' ');
+  t=t.replace(/\.{3,}/g,'…').replace(/\s+/g,' ');
+  t=t.replace(/\s+([.,?!;:])/g,'$1').replace(/([.?!])\1+/g,'$1').trim();
+  return t;
+}
+const P=DATA.phrases.map(p=>{const en=FIX[p.id]||p.en;const c=core(en);return{id:p.id,s:p.s,en:en,ru:p.ru,core:c,toks:c.split(' ')}});
+const BY=new Map(P.map(p=>[p.id,p]));
+const normTok=t=>t.toLowerCase().replace(/[^a-z0-9а-яё]/g,'');
+function norm(s){return s.toLowerCase().replace(/[“”"'’]/g,'').replace(/([a-z])(\d)/g,'$1 $2').replace(/(\d)([a-z])/g,'$1 $2').replace(/[^a-z0-9а-яё ]+/g,' ').replace(/\s+/g,' ').trim()}
+const canBuild=p=>p.toks.length>=3&&p.toks.length<=16;
+const canType=p=>p.toks.length>=2&&p.toks.length<=12;
+const canMatch=p=>p.core.length<=60&&p.ru.length<=80;
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition||null;
+const KEYSET=new Set(['left','right','climb','descend','not','no','negative','unable','reduce','increase']);
+const NUMW={zero:'0',oh:'0',one:'1',two:'2',three:'3',tree:'3',four:'4',five:'5',fife:'5',six:'6',seven:'7',eight:'8',nine:'9',niner:'9'};
+function normSpeech(s){
+  let t=norm(s);
+  t=t.replace(/\bflight levels?\b/g,'fl').replace(/\brunway\b/g,'rwy').replace(/\btaxiway\b/g,'twy').replace(/\bnautical miles?\b/g,'nm').replace(/\bdegrees?\b/g,'').replace(/\bkilomet(?:er|re)s?\b/g,'km').replace(/\bmet(?:er|re)s?\b/g,'m').replace(/\bminutes?\b/g,'min').replace(/\bfeet\b/g,'ft');
+  t=t.replace(/(\d) r\b/g,'$1 right').replace(/(\d) l\b/g,'$1 left').replace(/(\d) c\b/g,'$1 centre');
+  const out=[];let buf='';
+  for(const w of t.split(' ')){if(NUMW[w]!==undefined){buf+=NUMW[w]}else{if(buf){out.push(buf);buf=''}if(w)out.push(w)}}
+  if(buf)out.push(buf);
+  return out;
+}
+function levS(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let pr=Array.from({length:n+1},(_,i)=>i);for(let i=1;i<=m;i++){const cu=[i];for(let j=1;j<=n;j++)cu[j]=Math.min(pr[j]+1,cu[j-1]+1,pr[j-1]+(a[i-1]===b[j-1]?0:1));pr=cu}return pr[n]}
+function alignWords(u,t){
+  const eq=(a,b)=>{if(a===b)return true;if(/\d/.test(a+b)||KEYSET.has(a)||KEYSET.has(b))return false;const L=Math.max(a.length,b.length);return L>=4&&levS(a,b)<=(L>=8?2:1)};
+  const m=u.length,n=t.length,d=Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)d[i][j]=eq(u[i],t[j])?d[i+1][j+1]+1:Math.max(d[i+1][j],d[i][j+1]);
+  const mu=Array(m).fill(false),mt=Array(n).fill(false);let i=0,j=0;
+  while(i<m&&j<n){if(eq(u[i],t[j])){mu[i]=mt[j]=true;i++;j++}else if(d[i+1][j]>=d[i][j+1])i++;else j++}
+  const k=mt.filter(Boolean).length;
+  return{cov:n?k/n:0,prec:m?mu.filter(Boolean).length/m:0,mu,mt};
+}
+function speechEval(heard,p){
+  const u=normSpeech(heard);let best=null;
+  for(const c of [p.core,p.en.replace(/[()]/g,' ')]){const t=normSpeech(c),r=alignWords(u,t);if(!best||r.cov>best.cov)best=Object.assign({t:t},r)}
+  const must=best.t.every((w,i)=>best.mt[i]||!(/\d/.test(w)||KEYSET.has(w)));
+  const ok=u.length>0&&best.cov>=.85&&best.prec>=.75&&must;
+  return{ok:ok,cov:best.cov,you:'<span style="color:var(--muted)">You said: </span>'+(u.length?u.map((w,i)=>best.mu[i]?'<span class="ok">'+esc(w)+'</span>':'<s>'+esc(w)+'</s>').join(' '):'<s>(nothing)</s>')};
+}
+const LISTEN=('speechSynthesis' in window)&&typeof SpeechSynthesisUtterance!=='undefined';
+
+/* ---------- storage ---------- */
+const KEY='radiocheck.v1';
+const defaults=()=>({xp:0,days:{},cards:{},set:{goal:100,sfx:true,rate:0.9,auto:false,theme:'auto',dir:'ru-en'},sessions:0,best:{blitz:0},right:0,wrong:0,bestStreak:0});
+let ST=defaults();
+try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);ST=Object.assign(defaults(),o);ST.set=Object.assign(defaults().set,o.set||{});ST.best=Object.assign({blitz:0},o.best||{})}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
+function applyTheme(){const r=document.documentElement;if(ST.set.theme==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',ST.set.theme)}
+applyTheme();
+
+/* ---------- progress logic ---------- */
+const DAYS=[0,1,3,7,14,30], MASTER=3;
+const card=id=>ST.cards[id]||(ST.cards[id]={b:0,due:0,r:0,w:0,s:0,l:0});
+function grade(id,ok,hinted){
+  const c=card(id),now=Date.now();c.s++;c.l=now;
+  if(ok){c.r++;ST.right++;if(!hinted&&(c.s===1||c.b===0||c.due<=now)){c.b=Math.min(5,c.b+1);c.due=now+DAYS[c.b]*864e5}}
+  else{c.w++;ST.wrong++;c.b=Math.max(0,c.b-2);c.due=now}
+}
+function counts(arr){let m=0,l=0,f=0,due=0;const now=Date.now();for(const p of arr){const c=ST.cards[p.id];if(!c||!c.s)f++;else{if(c.b>=MASTER)m++;else l++;if(c.due<=now)due++}}return{m,l,f,due,n:arr.length}}
+const RANKS=[['Cadet',0],['Pilot',150],['Senior Pilot',400],['Flight Leader',800],['Squadron Commander',1400],['Wing Commander',2200],['Group Commander',3300],['Air Marshal',5000]];
+function rankInfo(xp){let i=0;for(let k=0;k<RANKS.length;k++)if(xp>=RANKS[k][1])i=k;const c=RANKS[i],n=RANKS[i+1];return{i,name:c[0],cur:c[1],next:n?n[1]:null,nextName:n?n[0]:null,pct:n?(xp-c[1])/(n[1]-c[1]):1}}
+function streak(){let n=0;const d=new Date();if(!(ST.days[fmt(d)]>0))d.setDate(d.getDate()-1);while(ST.days[fmt(d)]>0){n++;d.setDate(d.getDate()-1)}return n}
+function addXP(n){ST.xp+=n;const k=today();ST.days[k]=(ST.days[k]||0)+n;if(sess)sess.xp+=n}
+
+/* ---------- state ---------- */
+const S={tab:'home',scope:'all',q:'',bu:'all',cover:'none'};
+let sess=null;
+const app=$('#app'),sessEl=$('#sess');
+function scopePool(){
+  if(S.scope==='all')return P;
+  if(S.scope==='weak')return weakList();
+  return P.filter(p=>p.s===S.scope);
+}
+function weakList(){
+  return P.filter(p=>{const c=ST.cards[p.id];return c&&c.w>0&&(c.b<MASTER||c.w>c.r)})
+    .sort((a,b)=>{const A=ST.cards[a.id],B=ST.cards[b.id];return (B.w-B.r)-(A.w-A.r)||A.b-B.b}).slice(0,40);
+}
+const scopeName=()=>S.scope==='all'?'All units':S.scope==='weak'?'Weak spots':'Unit '+ROMAN[S.scope];
+
+/* ---------- sound & voice ---------- */
+let AC;
+function beep(f,d,t,type,v){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain(),s=AC.currentTime+(t||0);o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(v||.07,s);g.gain.exponentialRampToValueAtTime(.0001,s+d);o.connect(g);g.connect(AC.destination);o.start(s);o.stop(s+d)}catch(e){}}
+function sfx(k){if(!ST.set.sfx)return;if(k==='ok'){beep(660,.12);beep(880,.16,.1)}else if(k==='bad'){beep(170,.28,0,'sawtooth',.05)}else if(k==='done'){[523,659,784,1046].forEach((f,i)=>beep(f,.2,i*.12))}}
+let VOICE=null;
+function pickVoice(){try{const v=speechSynthesis.getVoices();VOICE=v.find(x=>/^en[-_]US/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||null}catch(e){}}
+if(LISTEN){pickVoice();try{speechSynthesis.addEventListener('voiceschanged',pickVoice)}catch(e){}}
+const TTS={RWY:'runway',TWY:'taxiway',FL:'flight level',NM:'nautical miles',ATIS:'A-tiss',ILS:'I L S',VOR:'V O R',DME:'D M E',NDB:'N D B',TCAS:'T-cas',RA:'R A',UAV:'U A V',RVSM:'R V S M',FIR:'F I R',ATC:'A T C',CRP:'C R P',UZB:'Uniform Zulu Bravo',TKT:'T K T',LT:'L T',SR:'S R',CB:'C B',SL:'S L',VIP:'V I P',AIM:'A I M',FDS:'F D S',km:'kilometers',m:'meters',min:'minutes',ft:'feet'};
+const DW=['zero','one','two','three','four','five','six','seven','eight','niner'];
+function ttsText(s){
+  return s.replace(/\([^)]*\)/g,' ').replace(/…|\.{3,}/g,' ').split(/\s+/).filter(Boolean).map(w=>{
+    const m=w.match(/^([^A-Za-z0-9°]*)([A-Za-z0-9°:]+)(.*)$/);if(!m)return w;
+    let a=m[1],c=m[2],z=m[3];
+    if(TTS[c]!==undefined)c=TTS[c];
+    else if(/^\d+[LRC]?$/.test(c)){const dg=c.replace(/[LRC]$/,''),sf=c.slice(dg.length);c=dg.split('').map(d=>DW[+d]).join(' ')+(sf?' '+({L:'left',R:'right',C:'centre'})[sf]:'')}
+    else if(/^\d+°$/.test(c))c=c.slice(0,-1).split('').map(d=>DW[+d]).join(' ')+' degrees';
+    return a+c+z}).join(' ');
+}
+function speak(text,slow){
+  if(!LISTEN)return;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(ttsText(text));u.lang='en-US';u.rate=slow?0.6:ST.set.rate;if(VOICE)u.voice=VOICE;speechSynthesis.speak(u)}catch(e){}
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>{t.hidden=true},2000)}
+function dialog(title,body,yes,onYes,no){
+  const d=document.createElement('div');d.className='scrim';
+  d.innerHTML='<div class="dlg" role="dialog" aria-modal="true"><h3>'+esc(title)+'</h3><p>'+esc(body)+'</p><div class="row"><button class="btn ghost" data-d="no">'+esc(no||'Cancel')+'</button><button class="btn bad" data-d="yes">'+esc(yes)+'</button></div></div>';
+  d.addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(!b)return;d.remove();if(b.dataset.d==='yes')onYes()});
+  document.body.appendChild(d);
+}
+
+/* ---------- question pools ---------- */
+function pick(arr,n){
+  const now=Date.now(),due=[],fresh=[],rest=[];
+  for(const p of arr){const c=ST.cards[p.id];if(!c||!c.s)fresh.push(p);else if(c.due<=now)due.push(p);else rest.push(p)}
+  const cb=x=>ST.cards[x.id];
+  due.sort((a,b)=>cb(a).b-cb(b).b||cb(a).due-cb(b).due);
+  rest.sort((a,b)=>cb(a).b-cb(b).b||cb(a).l-cb(b).l);
+  const out=due.slice(0,n);
+  const cap=Math.min(n-out.length,Math.max(4,Math.ceil(n*.5)));
+  out.push(...(typeof S.scope==='number'?fresh:shuffle(fresh)).slice(0,cap));
+  if(out.length<n)out.push(...rest.slice(0,n-out.length));
+  if(out.length<n){const have=new Set(out.map(p=>p.id));out.push(...shuffle([...due,...fresh,...rest].filter(p=>!have.has(p.id))).slice(0,n-out.length))}
+  return shuffle(out);
+}
+function wpick(list){let t=0;for(const x of list)t+=x[1];let r=Math.random()*t;for(const x of list){r-=x[1];if(r<=0)return x[0]}return list[0][0]}
+function pickType(p){
+  const b=(ST.cards[p.id]||{b:0}).b,W=[],add=(t,w)=>W.push([t,w]);
+  if(b<=1){add('mcqRE',4);add('mcqER',2);add('cloze',2);if(canBuild(p))add('build',2);if(LISTEN)add('listenEN',1)}
+  else if(b<=3){if(canBuild(p))add('build',3);add('cloze',2);add('mcqRE',2);if(canType(p))add('type',2);if(LISTEN&&canBuild(p))add('listenBuild',2);add('mcqER',1)}
+  else{if(canType(p))add('type',4);if(canBuild(p))add('build',2);if(LISTEN&&canBuild(p))add('listenBuild',2);add('cloze',2);add('mcqRE',1)}
+  return wpick(W);
+}
+const simTok=p=>new Set(p.toks.map(normTok).filter(Boolean));
+function distractors(p,n){
+  const A=simTok(p),seen=new Set([p.core.toLowerCase(),p.ru]);
+  const ranked=P.filter(q=>q.id!==p.id).map(q=>{const B=simTok(q);let c=0;A.forEach(x=>{if(B.has(x))c++});return{q,s:c/Math.sqrt((A.size*B.size)||1)+(q.s===p.s?.15:0)+Math.random()*.28}}).sort((a,b)=>b.s-a.s);
+  const out=[];
+  for(const r of ranked){const k=r.q.core.toLowerCase();if(seen.has(k)||seen.has(r.q.ru))continue;seen.add(k);seen.add(r.q.ru);out.push(r.q);if(out.length>=n)break}
+  return out;
+}
+/* cloze */
+const KEYW=new Set(['left','right','climb','descend','maintain','unable','not','no','negative','cleared','reduce','increase','hold','stop','vacate','expect','report','request','confirm','verify','advise','heading','level','above','below','before','after','inbound','outbound','north','south','east','west','north-west','ahead','behind','taxi','land','takeoff','departure','approach','closed','open','higher','lower','faster','slower','immediately','continue','resume','cancel']);
+const OPP={left:'right',right:'left',climb:'descend',descend:'climb',reduce:'increase',increase:'reduce',unable:'able',before:'after',after:'before',above:'below',below:'above',higher:'lower',lower:'higher',inbound:'outbound',outbound:'inbound',ahead:'behind',behind:'ahead',north:'south',south:'north',east:'west',west:'east',closed:'open',open:'closed',faster:'slower',slower:'faster',stop:'continue',continue:'stop',hold:'resume',expect:'report',confirm:'cancel',cancel:'confirm'};
+const CAPS=[...new Set(P.flatMap(p=>p.toks.map(t=>t.replace(/[^A-Za-z]/g,'')).filter(w=>w.length>=2&&w.length<=5&&w===w.toUpperCase())))];
+const SECTW={};P.forEach(p=>{(SECTW[p.s]=SECTW[p.s]||new Set());p.toks.forEach(t=>{const w=t.replace(/[^A-Za-z]/g,'').toLowerCase();if(w.length>=4)SECTW[p.s].add(w)})});
+function numDistractors(w){
+  const out=new Set(),idx=[];w.split('').forEach((c,i)=>{if(/\d/.test(c))idx.push(i)});
+  for(let k=0;k<60&&out.size<3;k++){const a=w.split(''),i=idx[rnd(idx.length)];a[i]=String((+a[i]+1+rnd(9))%10);const v=a.join('');if(v!==w&&(idx[0]!==0||w[0]==='0'||v[0]!=='0'))out.add(v)}
+  return [...out];
+}
+function wordDistractors(w,p){
+  const lw=w.toLowerCase(),out=new Set();
+  if(w===w.toUpperCase()&&w.length>=2){shuffle(CAPS).forEach(c=>{if(out.size<3&&c!==w)out.add(c)});return [...out]}
+  if(OPP[lw]){let o=OPP[lw];if(w[0]===w[0].toUpperCase())o=o[0].toUpperCase()+o.slice(1);out.add(o)}
+  const inP=new Set(p.toks.map(t=>t.replace(/[^A-Za-z]/g,'').toLowerCase()));
+  const pool=shuffle([...SECTW[p.s]]).filter(x=>!inP.has(x)&&Math.abs(x.length-w.length)<=3&&x!==lw);
+  for(const x of pool){if(out.size>=3)break;out.add(w[0]===w[0].toUpperCase()?x[0].toUpperCase()+x.slice(1):x)}
+  return [...out];
+}
+function makeCloze(p){
+  const cand=[];
+  p.toks.forEach((t,i)=>{
+    const m=t.match(/^([^A-Za-z0-9]*)(.*?)([^A-Za-z0-9°]*)$/);const w=m[2];if(!w)return;
+    let wt=0;if(/\d/.test(w))wt=5;else if(KEYW.has(w.toLowerCase()))wt=4;else if(w.length>=6&&i>0)wt=1;else if(w.length>=4)wt=.5;
+    if(wt)cand.push([{i,pre:m[1],w,suf:m[3]},wt]);
+  });
+  if(!cand.length)return null;
+  const c=wpick(cand);
+  const d=/\d/.test(c.w)?numDistractors(c.w):wordDistractors(c.w,p);
+  if(d.length<2)return null;
+  return{before:p.toks.slice(0,c.i).join(' ')+(c.pre?(c.i?' ':'')+c.pre:''),after:(c.suf||'')+(c.i<p.toks.length-1?' '+p.toks.slice(c.i+1).join(' '):''),correct:c.w,opts:shuffle([c.w,...d.slice(0,3)]).map(t=>({text:t,ok:t===c.w}))};
+}
+function makeQ(spec){
+  const p=BY.get(spec.id),t=spec.type,q={t,id:p.id};
+  if(t==='mcqRE'||t==='mcqER'||t==='listenEN'||t==='listenRU'){
+    const ru=(t==='mcqER'||t==='listenRU');q.ru=ru;
+    q.opts=shuffle([p,...distractors(p,3)]).map(x=>({text:ru?x.ru:x.core,ok:x.id===p.id}));
+  }else if(t==='build'||t==='listenBuild'){
+    const items=p.toks.map((tk,i)=>({id:i,t:tk}));
+    if(p.toks.length<=12){const have=new Set(p.toks.map(normTok));const extra=shuffle(P.filter(x=>x.s===p.s&&x.id!==p.id).flatMap(x=>x.toks)).filter(w=>{const n=normTok(w);return n.length>=3&&!/\d/.test(n)&&!have.has(n)});const seen=new Set();extra.forEach(w=>{const n=normTok(w);if(seen.size<2&&!seen.has(n)){seen.add(n);items.push({id:items.length,t:w})}})}
+    let sh=shuffle(items);if(sh.length>2&&sh.slice(0,p.toks.length).every((x,i)=>x.id===i))sh=shuffle(items);
+    q.items=sh;q.ans=[];
+  }else if(t==='cloze'){
+    const c=makeCloze(p);if(!c)return makeQ({id:p.id,type:'mcqRE'});Object.assign(q,c);
+  }
+  return q;
+}
+
+/* ---------- views ---------- */
+const MODES=[
+ {id:'flash',name:'Flashcards',desc:'Flip, recall, rate yourself',icon:'cards'},
+ {id:'quizRE',name:'Quiz RU→EN',desc:'Pick the English phrase',icon:'quiz'},
+ {id:'quizER',name:'Quiz EN→RU',desc:'Pick the Russian meaning',icon:'swap'},
+ {id:'build',name:'Word Builder',desc:'Assemble it word by word',icon:'blocks'},
+ {id:'type',name:'Type It',desc:'Write the whole phrase',icon:'keys'},
+ {id:'cloze',name:'Fill the Gap',desc:'Numbers, directions, key words',icon:'gap'},
+ {id:'listen',name:'Listen',desc:'Hear it, then pick or build',icon:'spk',needs:'voice'},
+ {id:'speak',name:'Speak It',desc:'Say the answer out loud',icon:'mic'},
+ {id:'match',name:'Match Pairs',desc:'Connect English and Russian',icon:'pairs'},
+ {id:'blitz',name:'Blitz',desc:'60 seconds, as many as you can',icon:'bolt'},
+ {id:'weak',name:'Weak Spots',desc:'The phrases you miss most',icon:'target'}
+];
+function chipsHTML(){
+  const mk=(v,l)=>'<button class="chip" data-a="scope" data-v="'+v+'" aria-pressed="'+(String(S.scope)===String(v))+'">'+l+'</button>';
+  return '<div class="chips">'+mk('all','All')+mk('weak','Weak')+ROMAN.map((r,i)=>mk(i,r)).join('')+'</div>';
+}
+function pipHTML(id){const c=ST.cards[id],b=c?c.b:0;let h='';for(let i=1;i<=5;i++)h+='<i class="'+(i<=b?(b>=MASTER?'m':'on'):'')+'"></i>';return h}
+function strip(p,o){
+  o=o||{};
+  return '<div class="strip'+(o.prompt?' prompt':'')+'"><div class="tag"><b>'+ROMAN[p.s]+'</b><span>#'+p.id+'</span></div><div class="txt">'
+   +'<div class="en'+(o.cover==='en'?' cov':'')+'"'+(o.cover==='en'?' data-a="uncover"':'')+'>'+esc(p.en)+'</div>'
+   +'<div class="ru'+(o.cover==='ru'?' cov':'')+'"'+(o.cover==='ru'?' data-a="uncover"':'')+'>'+esc(p.ru)+'</div>'
+   +(o.pips?'<div class="pips">'+pipHTML(p.id)+'</div>':'')+'</div>'
+   +(o.speak&&LISTEN?'<button class="spk" data-a="speak" data-id="'+p.id+'" aria-label="Play voice">'+ic('spk')+'</button>':'<span></span>')+'</div>';
+}
+function header(){
+  const r=rankInfo(ST.xp);
+  return '<header class="top"><div class="brand">'+ic('plane')+'<span>Radio Check</span></div><div class="rankchip">'+esc(r.name)+' · '+ST.xp+' XP</div></header>';
+}
+function viewHome(){
+  const arr=scopePool(),c=counts(arr),td=ST.days[today()]||0,goal=ST.set.goal,st=streak();
+  const C=2*Math.PI*34,off=C*(1-Math.min(1,td/goal));
+  const units=SECT.map((n,i)=>{
+    const u=P.filter(p=>p.s===i),k=counts(u);
+    return '<button class="unit" data-a="scope" data-v="'+i+'" aria-pressed="'+(S.scope===i)+'"><span class="roman">'+ROMAN[i]+'</span><span><div class="uname">'+esc(n)+'</div><div class="umeta">'+k.n+' phrases · '+k.m+' mastered</div><div class="seg"><i class="m" style="width:'+(k.m/k.n*100)+'%"></i><i class="l" style="width:'+(k.l/k.n*100)+'%"></i></div></span></button>';
+  }).join('');
+  return '<div class="wrap">'+header()
+   +'<section class="hero"><div class="ring"><svg width="88" height="88" viewBox="0 0 88 88"><circle cx="44" cy="44" r="34" fill="none" stroke="var(--line)" stroke-width="9"/><circle cx="44" cy="44" r="34" fill="none" stroke="var(--signal)" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/></svg><div class="num">'+Math.min(100,Math.round(td/goal*100))+'%</div></div>'
+   +'<div><div class="kicker">Today</div><div class="big">'+td+'<small> / '+goal+' XP</small></div><div class="streak">'+ic('flame')+'<span>'+st+' day streak</span></div></div>'
+   +'<button class="btn primary" data-a="daily">Start sortie · '+esc(scopeName())+'</button>'
+   +'<div class="duerow"><span><b>'+c.due+'</b> due</span><span><b>'+c.f+'</b> new</span><span><b>'+c.m+'</b> mastered</span></div></section>'
+   +'<div class="h2">Scope</div>'+chipsHTML()
+   +'<div class="h2">Units</div><div class="units">'+units+'</div></div>';
+}
+function viewGames(){
+  const arr=scopePool();
+  const tiles=MODES.map(m=>{
+    const off=(m.needs==='voice'&&!LISTEN);
+    return '<button class="tile" data-a="mode" data-v="'+m.id+'"'+(off?' disabled':'')+'>'+ic(m.icon)+'<b>'+m.name+'</b><span>'+(off?'Voice is not available on this device':m.desc)+'</span></button>';
+  }).join('');
+  return '<div class="wrap">'+header()
+   +'<div class="scopeline"><span>Scope: <b>'+esc(scopeName())+'</b></span><span>'+arr.length+' phrases</span></div>'+chipsHTML()
+   +'<div class="h2">Games</div><div class="grid">'+tiles+'</div></div>';
+}
+function bookItems(){
+  const q=S.q.trim().toLowerCase();
+  return P.filter(p=>(S.bu==='all'||p.s===S.bu)&&(!q||p.en.toLowerCase().includes(q)||p.ru.toLowerCase().includes(q)||String(p.id)===q));
+}
+function bookList(){
+  const items=bookItems();
+  if(!items.length)return '<p class="ru">Nothing matches. Try another word or unit.</p>';
+  return items.map(p=>strip(p,{speak:true,pips:true,cover:S.cover==='none'?null:S.cover})).join('');
+}
+function viewBook(){
+  const mk=(v,l)=>'<button class="chip" data-a="bu" data-v="'+v+'" aria-pressed="'+(String(S.bu)===String(v))+'">'+l+'</button>';
+  const cv=(v,l)=>'<button data-a="cover" data-v="'+v+'" aria-pressed="'+(S.cover===v)+'">'+l+'</button>';
+  return '<div class="wrap">'+header()
+   +'<div class="tools"><input id="q" class="search" type="search" placeholder="Search English, Russian or number" value="'+esc(S.q)+'" autocomplete="off">'
+   +'<div class="chips">'+mk('all','All')+ROMAN.map((r,i)=>mk(i,r)).join('')+'</div>'
+   +'<div class="segc" role="group" aria-label="Cover text">'+cv('none','Show both')+cv('en','Cover EN')+cv('ru','Cover RU')+'</div></div>'
+   +'<div class="list" id="booklist">'+bookList()+'</div></div>';
+}
+function viewProgress(){
+  const r=rankInfo(ST.xp),all=counts(P),tot=ST.right+ST.wrong,acc=tot?Math.round(ST.right/tot*100):0;
+  const days=[],names=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push({k:fmt(d),n:names[d.getDay()],v:ST.days[fmt(d)]||0})}
+  const mx=Math.max(ST.set.goal,...days.map(d=>d.v));
+  const wk=weakList().slice(0,8);
+  const seg=(k,opts)=>'<div class="segc">'+opts.map(o=>'<button data-a="set" data-k="'+k+'" data-v="'+o[0]+'" aria-pressed="'+(String(ST.set[k])===String(o[0]))+'">'+o[1]+'</button>').join('')+'</div>';
+  return '<div class="wrap">'+header()
+   +'<div class="card"><div class="kicker">Rank</div><div class="big">'+esc(r.name)+'</div><div class="xpbar"><i style="width:'+Math.round(r.pct*100)+'%"></i></div><div class="umeta">'+(r.next?(r.next-ST.xp)+' XP to '+esc(r.nextName):'Top rank reached')+'</div></div>'
+   +'<div class="h2">Overview</div><div class="stats">'
+   +'<div class="card stat"><b>'+all.m+' / '+all.n+'</b><span>mastered</span></div>'
+   +'<div class="card stat"><b>'+acc+'%</b><span>accuracy</span></div>'
+   +'<div class="card stat"><b>'+streak()+'</b><span>day streak (best '+Math.max(ST.bestStreak,streak())+')</span></div>'
+   +'<div class="card stat"><b>'+ST.best.blitz+'</b><span>best blitz</span></div></div>'
+   +'<div class="h2">Last 7 days · XP</div><div class="card"><div class="week">'+days.map((d,i)=>'<div><i class="'+(i===6?'today':'')+'" style="height:'+Math.max(3,Math.round(d.v/mx*100))+'%"></i><span>'+d.n+'</span></div>').join('')+'</div></div>'
+   +'<div class="h2">Weakest phrases</div>'
+   +(wk.length?'<div class="list">'+wk.map(p=>strip(p,{speak:true,pips:true})).join('')+'</div><div class="row"><button class="btn primary" data-a="mode" data-v="weak">Drill weak spots</button></div>':'<p class="ru">Nothing yet. Misses will show up here.</p>')
+   +'<div class="h2">Settings</div><div class="card">'
+   +'<div class="setrow"><label>Daily goal</label>'+seg('goal',[[50,'50 XP'],[100,'100 XP'],[200,'200 XP']])+'</div>'
+   +'<div class="setrow"><label>Voice speed</label>'+seg('rate',[[0.7,'Slow'],[0.9,'Normal'],[1.1,'Fast']])+'</div>'
+   +'<div class="setrow"><label>Sound effects</label>'+seg('sfx',[[true,'On'],[false,'Off']])+'</div>'
+   +'<div class="setrow"><label>Play voice when a flashcard flips</label>'+seg('auto',[[true,'On'],[false,'Off']])+'</div>'
+   +'<div class="setrow"><label>Theme</label>'+seg('theme',[['auto','Auto'],['light','Light'],['dark','Dark']])+'</div></div>'
+   +'<div class="h2">Backup</div><div class="card"><p class="ru" style="margin:0">Progress is saved on this device. Copy the code to keep a backup or move to another phone.</p><textarea id="bk" class="bk" spellcheck="false" placeholder="Backup code appears here. Paste a code to restore."></textarea><div class="row"><button class="btn ghost sm" data-a="bkShow">Show and copy</button><button class="btn ghost sm" data-a="bkRestore">Restore</button></div></div>'
+   +'<div class="row"><button class="btn ghost" data-a="resetAsk">Reset all progress</button></div></div>';
+}
+function render(){
+  const tab=S.tab;
+  const body=tab==='home'?viewHome():tab==='games'?viewGames():tab==='book'?viewBook():viewProgress();
+  const t=(id,l,i)=>'<button class="tab" data-a="tab" data-v="'+id+'"'+(tab===id?' aria-current="page"':'')+'>'+ic(i)+'<span>'+l+'</span></button>';
+  app.innerHTML=body+'<nav class="tabs"><div>'+t('home','Today','home')+t('games','Games','grid')+t('book','Phrases','book')+t('progress','Progress','chart')+'</div></nav>';
+}
+
+/* ---------- sessions ---------- */
+function buildQueue(mode,n,ids){
+  let base=ids?ids.map(i=>BY.get(i)):scopePool();
+  if(mode==='weak')base=weakList();
+  if(mode==='build'||mode==='listen')base=base.filter(canBuild).length>=3?base.filter(canBuild):base;
+  if(mode==='type')base=base.filter(canType).length>=3?base.filter(canType):base;
+  if(mode==='speak')base=base.filter(p=>p.toks.length<=14).length>=3?base.filter(p=>p.toks.length<=14):base;
+  const chosen=ids?base:pick(base,n);
+  return chosen.map(p=>{
+    let type;
+    if(mode==='daily'||mode==='weak'||ids)type=pickType(p);
+    else if(mode==='flash')type='flash';
+    else if(mode==='quizRE')type='mcqRE';
+    else if(mode==='quizER')type='mcqER';
+    else if(mode==='build')type=canBuild(p)?'build':'mcqRE';
+    else if(mode==='type')type=canType(p)?'type':(canBuild(p)?'build':'mcqRE');
+    else if(mode==='cloze')type='cloze';
+    else if(mode==='speak')type=p.toks.length<=14?'speak':'mcqRE';
+    else if(mode==='listen')type=wpick([['listenEN',2],['listenRU',1],[canBuild(p)?'listenBuild':'listenEN',2]]);
+    return{id:p.id,type};
+  });
+}
+function startSession(mode,o){
+  o=o||{};
+  if(mode==='match')return startMatch();
+  if(mode==='blitz')return startBlitz();
+  const qs=buildQueue(mode,mode==='flash'?15:(mode==='daily'?12:10),o.ids);
+  if(!qs.length){toast(mode==='weak'||S.scope==='weak'?'No weak spots yet. Play a few games first.':'No phrases in this scope.');return}
+  sess={mode,ids:o.ids||null,qs,i:0,right:0,wrong:0,combo:0,best:0,xp:0,missed:new Map(),rq:new Set(),locked:false,t0:Date.now(),rank0:rankInfo(ST.xp)};
+  openSess();shell();nextQ();
+}
+function openSess(){sessEl.hidden=false;document.documentElement.style.overflow='hidden'}
+function closeSess(){stopRec();clearInterval(sess&&sess.timer);try{speechSynthesis.cancel()}catch(e){}sess=null;sessEl.hidden=true;sessEl.innerHTML='';document.documentElement.style.overflow='';render()}
+function shell(time){
+  sessEl.innerHTML='<div class="sbar"><button class="x" data-a="quit" aria-label="Quit">'+ic('close')+'</button><div class="pbar'+(time?' time':'')+'"><i id="pf" style="width:'+(time?100:0)+'%"></i></div><span class="combo" id="cb" hidden></span></div><div class="sbody" id="sb"></div><div id="sheet" hidden></div>';
+}
+function setProg(){const f=$('#pf');if(f)f.style.width=Math.round(sess.i/sess.qs.length*100)+'%'}
+function updCombo(){const c=$('#cb');if(!c)return;if(sess.combo>=2){c.hidden=false;c.textContent='x'+sess.combo}else c.hidden=true}
+const retryType=t=>({build:'mcqRE',type:'mcqRE',cloze:'mcqRE',listenBuild:'listenEN',mcqRE:'build',mcqER:'mcqRE',listenEN:'mcqRE',listenRU:'mcqER',flash:'flash',speak:'mcqRE'})[t]||'mcqRE';
+function nextQ(){
+  if(sess.i>=sess.qs.length)return finish();
+  const spec=sess.qs[sess.i];
+  let t=spec.type;const p=BY.get(spec.id);
+  if((t==='build'||t==='listenBuild')&&!canBuild(p))t='mcqRE';
+  if(t==='type'&&!canType(p))t='mcqRE';
+  if(t==='speak'&&p.toks.length>14)t='mcqRE';
+  stopRec();
+  sess.cur=makeQ({id:spec.id,type:t});sess.locked=false;sess.hinted=false;sess.pending=null;
+  renderQ();
+}
+const lab=t=>'<div class="qlabel">'+t+'</div>';
+function optsHTML(q,two){
+  return '<div class="opts'+(two?' two':'')+'">'+q.opts.map((o,i)=>'<button class="opt" data-a="opt" data-i="'+i+'"><span class="n">'+(i+1)+'</span><span class="'+(q.ru&&!two?'ru':'en')+'" style="'+(q.ru&&!two?'color:var(--ink)':'')+'">'+esc(o.text)+'</span></button>').join('')+'</div>';
+}
+function listenHTML(slow){return '<div class="listen"><button class="play" data-a="speak" data-id="'+sess.cur.id+'" aria-label="Play">'+ic('spk')+'</button><button class="slowb" data-a="slow">Slow</button></div>'}
+function buildHTML(){return '<div class="slot" id="slot"></div><div class="bank" id="bank"></div><div class="row"><button class="btn ghost" data-a="reset">Reset</button><button class="btn primary" id="chk" data-a="check" disabled>Check</button></div>'}
+function paintBuild(){
+  const q=sess.cur,used=new Set(q.ans);
+  $('#slot').innerHTML=q.ans.map((id,k)=>'<button class="chipw'+(q.mark?(q.mark[k]?' good':' bad'):'')+'" data-a="unchip" data-k="'+k+'">'+esc(q.items.find(x=>x.id===id).t)+'</button>').join('');
+  $('#bank').innerHTML=q.items.map(x=>'<button class="chipw'+(used.has(x.id)?' ghost':'')+'" data-a="chip" data-id="'+x.id+'">'+esc(x.t)+'</button>').join('');
+  const need=BY.get(q.id).toks.length;$('#chk').disabled=q.ans.length!==need||sess.locked;
+}
+function renderQ(){
+  const q=sess.cur,p=BY.get(q.id),sb=$('#sb');hideSheet();
+  const prompt=strip(p,{prompt:true}).replace(/<div class="en[^>]*>.*?<\/div>/,'');
+  const promptEN='<div class="strip prompt"><div class="tag"><b>'+ROMAN[p.s]+'</b><span>#'+p.id+'</span></div><div class="txt"><div class="en">'+esc(p.core)+'</div></div><span></span></div>';
+  let h='';
+  switch(q.t){
+    case 'mcqRE':h=lab('Translate into English')+prompt+optsHTML(q);break;
+    case 'mcqER':h=lab('What does it mean?')+promptEN+optsHTML(q);break;
+    case 'listenEN':h=lab('Listen, then pick what you heard')+listenHTML()+optsHTML(q);break;
+    case 'listenRU':h=lab('Listen, then pick the meaning')+listenHTML()+optsHTML(q);break;
+    case 'build':h=lab('Build the phrase in English')+prompt+buildHTML();break;
+    case 'listenBuild':h=lab('Listen and build what you hear')+listenHTML()+'<div id="ruhint"><button class="btn ghost sm" data-a="ruhint">Show Russian (half XP)</button></div>'+buildHTML();break;
+    case 'type':h=lab('Write the phrase in English')+prompt+'<textarea id="ti" class="ti" rows="3" placeholder="Type the English phrase" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea><div id="hl" class="hintline"></div><div class="row"><button class="btn ghost" data-a="hint">Hint</button><button class="btn primary" data-a="check">Check</button></div>';break;
+    case 'speak':h=lab('Say it in English')+prompt+'<div class="micwrap"><button class="mic" id="mic" data-a="mic" aria-label="Tap to speak">'+ic('mic')+'</button><div class="hintline" id="mstat">'+(SR?'Tap the microphone and say the phrase':'Voice input is not available here. Type it, or use the microphone key on your keyboard.')+'</div></div><div class="heard you" id="heard"></div><div id="hl" class="hintline" style="text-align:center"></div><div id="typebox"></div><div class="row"><button class="btn ghost" data-a="hint">Hint</button><button class="btn ghost" data-a="micType">Type instead</button></div>';break;
+    case 'cloze':h=lab('Fill the gap')+prompt+'<div class="cloze">'+esc(q.before)+' <span class="gap" id="gp">&nbsp;</span>'+esc(q.after)+'</div>'+optsHTML(q,true);break;
+    case 'flash':h=flashHTML(q,p,false);break;
+  }
+  sb.innerHTML=h;sb.scrollTop=0;setProg();
+  if(q.items)paintBuild();
+  if(q.t.indexOf('listen')===0&&LISTEN)setTimeout(()=>{if(sess&&!sess.locked)speak(p.core)},350);
+  if(q.t==='type')setTimeout(()=>{const t=$('#ti');if(t)t.focus()},80);
+  if(q.t==='speak'&&!SR)showTypeBox();
+}
+function flashHTML(q,p,flipped){
+  const d=ST.set.dir,front=d==='ru-en'?'<div class="ru" style="color:var(--ink);font-size:18px">'+esc(p.ru)+'</div>':'<div class="en" style="font-size:16.5px">'+esc(p.en)+'</div>';
+  const back=d==='ru-en'?'<div class="en" style="font-size:16.5px">'+esc(p.en)+'</div>':'<div class="ru" style="color:var(--ink);font-size:18px">'+esc(p.ru)+'</div>';
+  const seg='<div class="segc dirsw"><button data-a="dir" data-v="ru-en" aria-pressed="'+(d==='ru-en')+'">RU → EN</button><button data-a="dir" data-v="en-ru" aria-pressed="'+(d==='en-ru')+'">EN → RU</button></div>';
+  return seg+'<div class="fc"><div class="strip prompt"><div class="tag"><b>'+ROMAN[p.s]+'</b><span>#'+p.id+'</span></div><div class="txt">'+front+(flipped?'<hr class="sep">'+'<div class="ans">'+back+'</div>':'')+'</div>'+(LISTEN&&(flipped||d==='en-ru')?'<button class="spk" data-a="speak" data-id="'+p.id+'" aria-label="Play">'+ic('spk')+'</button>':'<span></span>')+'</div>'
+   +(flipped?'<div class="row"><button class="btn bad" data-a="fAgain">Again</button><button class="btn good" data-a="fGot">Got it</button></div>':'<button class="btn primary wide" data-a="flip">Show answer</button>')+'</div>';
+}
+function hideSheet(){const s=$('#sheet');if(s){s.hidden=true;s.innerHTML=''}}
+const PRAISE=['Roger','Affirm','Copy that','Good read-back','Solid','Well flown'];
+function showSheet(ok,p,gain,extra){
+  const s=$('#sheet');s.hidden=false;
+  s.innerHTML='<div class="sheet '+(ok?'good':'bad')+'" role="status"><div class="sheet-in"><div class="sh-head"><span>'+(ok?PRAISE[rnd(PRAISE.length)]:'Say again')+'</span>'+(ok&&gain?'<span class="xp">+'+gain+' XP</span>':'')+'</div>'
+   +(extra&&extra.you?'<div class="you">'+extra.you+'</div>':'')
+   +'<div class="sh-ans"><div class="en">'+esc(p.en)+'</div><div class="ru">'+esc(p.ru)+'</div></div>'
+   +'<div class="sh-actions">'+(LISTEN?'<button class="btn spkb" data-a="speak" data-id="'+p.id+'" aria-label="Play">'+ic('spk')+'</button>':'')
+   +(extra&&extra.override?'<button class="btn ghost" data-a="override">Count as correct</button>':'')
+   +'<button class="btn '+(ok?'good':'bad')+'" data-a="next" id="nx">Continue</button></div></div></div>';
+  const sb=$('#sb');if(sb)setTimeout(()=>{sb.scrollTop=sb.scrollHeight},30);
+}
+function finalize(ok,o){
+  o=o||{};const p=BY.get(sess.cur.id);grade(p.id,ok,o.hinted);let gain=0;
+  if(ok){sess.right++;sess.combo++;sess.best=Math.max(sess.best,sess.combo);gain=o.xp!=null?o.xp:(o.hinted?5:10+Math.min(sess.combo-1,5));addXP(gain);sfx('ok')}
+  else{sess.wrong++;sess.combo=0;sess.missed.set(p.id,p);if(!sess.rq.has(p.id)){sess.rq.add(p.id);sess.qs.push({id:p.id,type:retryType(sess.cur.t)})}sfx('bad')}
+  updCombo();save();return gain;
+}
+function conclude(ok,extra){
+  if(sess.locked)return;sess.locked=true;
+  const p=BY.get(sess.cur.id);
+  if(!ok&&extra&&extra.override){sess.pending={hinted:sess.hinted};showSheet(false,p,0,extra);return}
+  const gain=finalize(ok,{hinted:sess.hinted});showSheet(ok,p,gain,extra);
+}
+
+/* ---------- finish ---------- */
+function finish(){
+  clearInterval(sess.timer);stopRec();
+  ST.sessions++;
+  const total=sess.right+sess.wrong,acc=total?sess.right/total:0;
+  let bonus=0;
+  if(sess.mode!=='blitz'&&total>=5&&acc>=.8){bonus=20;addXP(bonus)}
+  if(sess.mode==='blitz'&&sess.right>ST.best.blitz){ST.best.blitz=sess.right;sess.newBest=true}
+  ST.bestStreak=Math.max(ST.bestStreak,streak());save();
+  const after=rankInfo(ST.xp);sess.rankUp=after.i>sess.rank0.i?after:null;sess.bonus=bonus;
+  sfx('done');renderResult();
+}
+function renderResult(){
+  const total=sess.right+sess.wrong,acc=total?Math.round(sess.right/total*100):0,secs=Math.round((Date.now()-sess.t0)/1000);
+  const C=2*Math.PI*44,off=C*(1-acc/100),miss=[...sess.missed.values()];
+  const blitz=sess.mode==='blitz';
+  sessEl.innerHTML='<div class="sbody"><div class="res">'
+   +'<div class="ring" style="width:112px;height:112px"><svg width="112" height="112" viewBox="0 0 112 112"><circle cx="56" cy="56" r="44" fill="none" stroke="var(--line)" stroke-width="11"/><circle cx="56" cy="56" r="44" fill="none" stroke="'+(acc>=80?'var(--good)':'var(--signal)')+'" stroke-width="11" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/></svg><div class="num" style="font-size:28px">'+(blitz?sess.right:acc+'%')+'</div></div>'
+   +'<h2>'+(blitz?(sess.newBest?'New best':'Time'):'Sortie complete')+'</h2>'
+   +(sess.rankUp?'<div class="banner">Promoted to '+esc(sess.rankUp.name)+'</div>':'')
+   +'<div class="stats"><div class="card stat"><b>'+sess.right+' / '+total+'</b><span>correct</span></div><div class="card stat"><b>+'+sess.xp+'</b><span>XP'+(sess.bonus?' (incl. +'+sess.bonus+' bonus)':'')+'</span></div><div class="card stat"><b>x'+sess.best+'</b><span>best combo</span></div><div class="card stat"><b>'+Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0')+'</b><span>time</span></div></div>'
+   +(miss.length?'<div class="kicker" style="align-self:start">Review these</div><div class="list">'+miss.map(p=>strip(p,{speak:true})).join('')+'</div>':'')
+   +'<div class="row" style="width:100%">'+(miss.length?'<button class="btn ghost" data-a="drill">Drill misses</button>':'')+'<button class="btn ghost" data-a="again">Fly again</button></div>'
+   +'<button class="btn primary wide" data-a="home">Back to base</button></div></div>';
+}
+
+/* ---------- match ---------- */
+function startMatch(){
+  let base=scopePool().filter(canMatch);if(base.length<5)base=P.filter(canMatch);
+  const ids=pick(base,15).map(p=>p.id);
+  sess={mode:'match',qs:ids.map(id=>({id,type:'match'})),i:0,right:0,wrong:0,combo:0,best:0,xp:0,missed:new Map(),rq:new Set(),t0:Date.now(),rank0:rankInfo(ST.xp),ids,board:0};
+  openSess();shell();matchBoard();
+}
+function matchBoard(){
+  const ids=sess.ids.slice(sess.board*5,sess.board*5+5);
+  if(!ids.length)return finish();
+  sess.m={ids,sel:null,done:new Set(),miss:new Set(),graded:new Set()};
+  const L=shuffle(ids),R=shuffle(ids);
+  $('#sb').innerHTML=lab('Match each English phrase with its Russian meaning · board '+(sess.board+1)+' of 3')
+   +'<div class="mgrid"><div class="mcol">'+L.map(id=>'<button class="mt en" data-a="mpick" data-side="e" data-id="'+id+'">'+esc(BY.get(id).core)+'</button>').join('')+'</div><div class="mcol">'+R.map(id=>'<button class="mt" data-a="mpick" data-side="r" data-id="'+id+'">'+esc(BY.get(id).ru)+'</button>').join('')+'</div></div>';
+  const f=$('#pf');if(f)f.style.width=Math.round(sess.board/3*100)+'%';
+}
+function mTap(btn){
+  const m=sess.m,side=btn.dataset.side,id=+btn.dataset.id;
+  if(m.done.has(id)||sess.mlock)return;
+  document.querySelectorAll('.mt.sel').forEach(b=>{if(b.dataset.side===side)b.classList.remove('sel')});
+  if(!m.sel||m.sel.side===side){m.sel={side,id,btn};btn.classList.add('sel');return}
+  const a=m.sel;m.sel=null;
+  if(a.id===id){
+    document.querySelectorAll('.mt[data-id="'+id+'"]').forEach(b=>{b.classList.remove('sel');b.classList.add('done')});m.done.add(id);sfx('ok');
+    if(!m.miss.has(id)&&!m.graded.has(id)){m.graded.add(id);grade(id,true,false);sess.right++;addXP(6)}
+    if(m.done.size===5){sess.mlock=true;setTimeout(()=>{sess.mlock=false;sess.board++;save();matchBoard()},650)}
+  }else{
+    [a.btn,btn].forEach(b=>b.classList.add('shake'));sfx('bad');
+    setTimeout(()=>{document.querySelectorAll('.mt.shake,.mt.sel').forEach(b=>b.classList.remove('shake','sel'))},320);
+    [a.id,id].forEach(x=>{if(!m.miss.has(x)){m.miss.add(x);m.graded.add(x);grade(x,false,false);sess.wrong++;sess.missed.set(x,BY.get(x))}});
+  }
+  save();
+}
+
+/* ---------- blitz ---------- */
+function startBlitz(){
+  let base=scopePool().filter(p=>p.core.length<=70);if(base.length<8)base=P.filter(p=>p.core.length<=70);
+  const order=[];for(let k=0;k<6;k++)order.push(...shuffle(base));
+  sess={mode:'blitz',qs:order.map(p=>({id:p.id,type:Math.random()<.6?'mcqRE':'mcqER'})),i:0,right:0,wrong:0,combo:0,best:0,xp:0,missed:new Map(),rq:new Set(),t0:Date.now(),rank0:rankInfo(ST.xp),tEnd:Date.now()+60000};
+  openSess();shell(true);
+  sess.timer=setInterval(()=>{const left=sess.tEnd-Date.now();const f=$('#pf');if(f)f.style.width=Math.max(0,left/600)+'%';if(left<=0){clearInterval(sess.timer);finish()}},100);
+  blitzQ();
+}
+function blitzQ(){
+  const spec=sess.qs[sess.i];sess.cur=makeQ(spec);sess.locked=false;const q=sess.cur,p=BY.get(q.id);
+  const prompt=q.t==='mcqRE'?strip(p,{prompt:true}).replace(/<div class="en[^>]*>.*?<\/div>/,''):'<div class="strip prompt"><div class="tag"><b>'+ROMAN[p.s]+'</b><span>#'+p.id+'</span></div><div class="txt"><div class="en">'+esc(p.core)+'</div></div><span></span></div>';
+  $('#sb').innerHTML=lab((q.t==='mcqRE'?'Translate into English':'What does it mean?')+' · score '+sess.right)+prompt+optsHTML(q);
+}
+function blitzPick(i){
+  if(sess.locked)return;sess.locked=true;
+  const q=sess.cur,ok=!!q.opts[i].ok;
+  document.querySelectorAll('.opt').forEach((b,j)=>{b.disabled=true;if(q.opts[j].ok)b.classList.add('good');else if(j===i)b.classList.add('bad');else b.classList.add('dim')});
+  grade(q.id,ok,false);
+  if(ok){sess.right++;sess.combo++;sess.best=Math.max(sess.best,sess.combo);addXP(5);sfx('ok')}else{sess.wrong++;sess.combo=0;sess.missed.set(q.id,BY.get(q.id));sfx('bad')}
+  updCombo();save();
+  const me=sess;
+  setTimeout(()=>{if(sess!==me||me.mode!=='blitz'||me.tEnd-Date.now()<=0)return;me.i++;blitzQ()},ok?260:900);
+}
+
+/* ---------- actions ---------- */
+function typedCheck(inp,p){
+  const u=norm(inp).split(' ').filter(Boolean);
+  const KEY=new Set(['left','right','climb','descend','not','no','negative','unable','reduce','increase']);
+  const eq=(a,b)=>{if(a.length!==b.length)return false;for(let i=0;i<a.length;i++){if(a[i]===b[i])continue;if(/\d/.test(a[i]+b[i])||KEY.has(a[i])||KEY.has(b[i]))return false;if(a[i].length>=5&&lev(a[i],b[i])<=1)continue;return false}return true};
+  for(const c of [p.core,p.en.replace(/[()]/g,' ')]){const t=norm(c).split(' ').filter(Boolean);if(eq(u,t))return{ok:true}}
+  const t=norm(p.core).split(' ').filter(Boolean),keep=lcs(u,t);
+  return{ok:false,you:u.map((w,i)=>keep[i]?'<span class="ok">'+esc(w)+'</span>':'<s>'+esc(w)+'</s>').join(' ')};
+}
+function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let pr=Array.from({length:n+1},(_,i)=>i);for(let i=1;i<=m;i++){const cu=[i];for(let j=1;j<=n;j++)cu[j]=Math.min(pr[j]+1,cu[j-1]+1,pr[j-1]+(a[i-1]===b[j-1]?0:1));pr=cu}return pr[n]}
+function lcs(u,t){const m=u.length,n=t.length,d=Array.from({length:m+1},()=>Array(n+1).fill(0));for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)d[i][j]=u[i]===t[j]?d[i+1][j+1]+1:Math.max(d[i+1][j],d[i][j+1]);const k=Array(m).fill(false);let i=0,j=0;while(i<m&&j<n){if(u[i]===t[j]){k[i]=true;i++;j++}else if(d[i+1][j]>=d[i][j+1])i++;else j++}return k}
+
+let REC=null;
+function stopRec(){if(REC){try{REC.onend=null;REC.onerror=null;REC.onresult=null;REC.abort()}catch(e){}REC=null}}
+function setMic(on,msg){const m=$('#mic'),s=$('#mstat');if(m)m.classList.toggle('live',on);if(s&&msg)s.textContent=msg}
+function showTypeBox(){
+  const b=$('#typebox');if(!b||b.innerHTML)return;
+  b.innerHTML='<textarea id="ti" class="ti" rows="3" placeholder="Type the English phrase" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea><div class="row"><button class="btn primary" data-a="check">Check</button></div>';
+}
+function judgeSpeech(alts){
+  const p=BY.get(sess.cur.id);
+  const rs=alts.map(a=>speechEval(a,p)).sort((a,b)=>(b.ok-a.ok)||(b.cov-a.cov));
+  const r=rs[0];conclude(r.ok,r.ok?{you:r.you}:{you:r.you,override:true});
+}
+function micToggle(){
+  if(!sess||sess.locked)return;
+  if(!SR){toast('Voice input is not available here. Use Type instead.');showTypeBox();return}
+  if(REC){try{REC.stop()}catch(e){}return}
+  try{speechSynthesis.cancel()}catch(e){}
+  const r=new SR();REC=r;r.lang='en-US';r.interimResults=true;r.maxAlternatives=3;r.continuous=false;
+  const me=sess;let finalAlts=null;
+  $('#heard').textContent='';setMic(true,'Listening… say the phrase, then pause');
+  r.onresult=e=>{let interim='';for(let i=e.resultIndex;i<e.results.length;i++){const res=e.results[i];if(res.isFinal){finalAlts=[];for(let k=0;k<res.length;k++)finalAlts.push(res[k].transcript)}else interim+=res[0].transcript}if(interim&&$('#heard'))$('#heard').textContent=interim};
+  r.onerror=e=>{
+    REC=null;
+    const msg={'not-allowed':'The microphone is blocked. Allow it in the browser, or use Type instead.','service-not-allowed':'Voice recognition is blocked on this device. Use Type instead.','audio-capture':'No microphone found. Use Type instead.','network':'Voice recognition needs an internet connection.','no-speech':'Nothing heard. Tap the microphone and try again.','aborted':''}[e.error];
+    setMic(false,msg===undefined?'Could not listen ('+e.error+'). Try again or use Type instead.':msg);
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'||e.error==='audio-capture')showTypeBox();
+  };
+  r.onend=()=>{REC=null;setMic(false);if(sess!==me||me.locked)return;if(finalAlts){setMic(false,'');judgeSpeech(finalAlts)}else if($('#mstat')&&/Listening/.test($('#mstat').textContent))setMic(false,'Nothing heard. Tap the microphone and try again.')};
+  try{r.start()}catch(err){REC=null;setMic(false,'Could not start the microphone. Use Type instead.');showTypeBox()}
+}
+const A={
+  tab(el){S.tab=el.dataset.v;render();window.scrollTo(0,0)},
+  scope(el){const v=el.dataset.v;S.scope=(v==='all'||v==='weak')?v:+v;if(S.scope==='weak'&&!weakList().length)toast('No weak spots yet. They appear after misses.');render()},
+  bu(el){const v=el.dataset.v;S.bu=v==='all'?'all':+v;render();const q=$('#q');if(q&&S.q){}},
+  cover(el){S.cover=el.dataset.v;render()},
+  uncover(el){el.classList.toggle('cov')},
+  daily(){startSession('daily')},
+  mode(el){startSession(el.dataset.v)},
+  speak(el){speak(BY.get(+el.dataset.id).core)},
+  slow(){speak(BY.get(sess.cur.id).core,true)},
+  opt(el){
+    const i=+el.dataset.i;
+    if(sess.mode==='blitz')return blitzPick(i);
+    if(sess.locked)return;
+    const q=sess.cur,p=BY.get(q.id),ok=!!q.opts[i].ok;
+    document.querySelectorAll('.opt').forEach((b,j)=>{b.disabled=true;if(q.opts[j].ok)b.classList.add('good');else if(j===i)b.classList.add('bad');else b.classList.add('dim')});
+    if(q.t==='cloze'){const g=$('#gp');g.textContent=q.correct;g.classList.add(ok?'good':'bad')}
+    conclude(ok);
+  },
+  chip(el){const q=sess.cur;if(sess.locked)return;const id=+el.dataset.id;if(q.ans.includes(id))return;q.ans.push(id);q.mark=null;paintBuild()},
+  unchip(el){if(sess.locked)return;sess.cur.ans.splice(+el.dataset.k,1);sess.cur.mark=null;paintBuild()},
+  reset(){if(sess.locked)return;sess.cur.ans=[];sess.cur.mark=null;paintBuild()},
+  ruhint(){sess.hinted=true;const p=BY.get(sess.cur.id);$('#ruhint').innerHTML='<div class="ru" style="color:var(--ink)">'+esc(p.ru)+'</div>'},
+  hint(){
+    if(sess.locked)return;sess.hinted=true;const p=BY.get(sess.cur.id);
+    $('#hl').textContent=p.toks.map(w=>w[0]+'_'.repeat(Math.max(0,Math.min(w.length-1,8)))).join(' ');
+  },
+  check(){
+    if(sess.locked)return;const q=sess.cur,p=BY.get(q.id);
+    if(q.items){
+      const ok=q.ans.length===p.toks.length&&q.ans.every((id,k)=>normTok(q.items.find(x=>x.id===id).t)===normTok(p.toks[k]));
+      q.mark=q.ans.map((id,k)=>normTok(q.items.find(x=>x.id===id).t)===normTok(p.toks[k]));
+      sess.locked=true;paintBuild();sess.locked=false;conclude(ok);
+    }else{
+      const ti=$('#ti');if(!ti||!ti.value.trim()){toast('Type your answer first');return}
+      ti.blur();const r=typedCheck(ti.value,p);ti.readOnly=true;
+      conclude(r.ok,r.ok?null:{you:r.you,override:true});
+    }
+  },
+  mic(){micToggle()},
+  micType(){stopRec();setMic(false);showTypeBox();const t=$('#ti');if(t)t.focus()},
+  override(){
+    if(!sess.pending)return;const h=sess.pending.hinted;sess.pending=null;
+    const p=BY.get(sess.cur.id);const gain=finalize(true,{hinted:h});showSheet(true,p,gain);
+  },
+  next(){
+    if(!sess)return;
+    if(sess.pending){const h=sess.pending.hinted;sess.pending=null;finalize(false,{hinted:h})}
+    sess.i++;nextQ();
+  },
+  flip(){const q=sess.cur,p=BY.get(q.id);$('#sb').innerHTML=flashHTML(q,p,true);if(ST.set.auto)speak(p.core)},
+  dir(el){ST.set.dir=el.dataset.v;save();const q=sess.cur,p=BY.get(q.id);const flipped=!!$('.fc .ans');$('#sb').innerHTML=flashHTML(q,p,flipped)},
+  fGot(){finalize(true,{xp:5});sess.i++;nextQ()},
+  fAgain(){finalize(false);sess.i++;nextQ()},
+  mpick(el){mTap(el)},
+  quit(){
+    if(!sess)return;
+    if(sess.i===0&&sess.right+sess.wrong===0)return closeSess();
+    dialog('End this sortie?','Progress so far is saved.','End sortie',()=>closeSess(),'Keep going');
+  },
+  again(){const m=sess.mode,ids=sess.ids;clearInterval(sess.timer);sess=null;startSession(m,m==='match'||m==='blitz'?{}:{ids:ids&&m!=='flash'?ids:null})},
+  drill(){const ids=[...sess.missed.keys()];clearInterval(sess.timer);sess=null;startSession('daily',{ids})},
+  home(){closeSess()},
+  set(el){
+    const k=el.dataset.k;let v=el.dataset.v;
+    if(k==='goal')v=+v;else if(k==='rate')v=+v;else if(k==='sfx'||k==='auto')v=(v==='true');
+    ST.set[k]=v;save();if(k==='theme')applyTheme();const y=window.scrollY;render();window.scrollTo(0,y);
+  },
+  bkShow(){const ta=$('#bk');ta.value=JSON.stringify(ST);ta.focus();ta.select();try{navigator.clipboard.writeText(ta.value).then(()=>toast('Copied'),()=>toast('Select the text and copy it'))}catch(e){toast('Select the text and copy it')}},
+  bkRestore(){try{const o=JSON.parse($('#bk').value);if(!o||typeof o.xp!=='number'||typeof o.cards!=='object')throw 0;ST=Object.assign(defaults(),o);ST.set=Object.assign(defaults().set,o.set||{});ST.best=Object.assign({blitz:0},o.best||{});save();applyTheme();render();toast('Progress restored')}catch(e){toast('That code is not valid')}},
+  resetAsk(){dialog('Reset all progress?','XP, streak and every phrase level will be erased. This cannot be undone.','Reset',()=>{ST=defaults();save();applyTheme();render();toast('Progress reset')})}
+};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||t.disabled)return;const f=A[t.dataset.a];if(f)f(t,e)});
+document.addEventListener('input',e=>{if(e.target.id==='q'){S.q=e.target.value;const l=$('#booklist');if(l)l.innerHTML=bookList()}});
+document.addEventListener('keydown',e=>{
+  if(!sess||sessEl.hidden)return;
+  const ti=e.target&&e.target.id==='ti';
+  if(ti&&e.key==='Enter'&&!e.shiftKey){e.preventDefault();A.check();return}
+  if(ti)return;
+  const nx=$('#nx');
+  if((e.key==='Enter'||e.key===' ')&&nx&&!$('#sheet').hidden){e.preventDefault();A.next();return}
+  if(/^[1-4]$/.test(e.key)){const b=document.querySelectorAll('.opt')[+e.key-1];if(b&&!b.disabled)b.click()}
+});
+render();
+})();
+</script>
+<script>
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+</script>
+</body>
+</html>

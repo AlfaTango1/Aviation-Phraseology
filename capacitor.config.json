@@ -1,0 +1,6 @@
+{
+  "appId": "app.radiocheck.atc",
+  "appName": "Radio Check",
+  "webDir": "www",
+  "server": { "androidScheme": "https" }
+}
