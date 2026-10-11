@@ -1,5 +1,5 @@
 // Offline cache for Radio Check. Bump VERSION after changing any app file.
-const VERSION = 'radiocheck-v3';
+const VERSION = 'radiocheck-v4';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 
 self.addEventListener('install', e => {

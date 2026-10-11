@@ -313,6 +313,8 @@ const canBuild=p=>p.toks.length>=3&&p.toks.length<=16;
 const canType=p=>p.toks.length>=2&&p.toks.length<=12;
 const canMatch=p=>p.core.length<=60&&p.ru.length<=80;
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition||null;
+function nsr(){try{const c=window.Capacitor;return(c&&c.isNativePlatform&&c.isNativePlatform()&&c.Plugins&&c.Plugins.SpeechRecognition)||null}catch(e){return null}}
+const voiceOK=()=>!!(nsr()||SR);
 const KEYSET=new Set(['left','right','climb','descend','not','no','negative','unable','reduce','increase']);
 const NUMW={zero:'0',oh:'0',one:'1',two:'2',three:'3',tree:'3',four:'4',five:'5',fife:'5',six:'6',seven:'7',eight:'8',nine:'9',niner:'9'};
 function normSpeech(s){
@@ -671,7 +673,7 @@ function renderQ(){
     case 'build':h=lab('Build the phrase in English')+prompt+buildHTML();break;
     case 'listenBuild':h=lab('Listen and build what you hear')+listenHTML()+'<div id="ruhint"><button class="btn ghost sm" data-a="ruhint">Show Russian (half XP)</button></div>'+buildHTML();break;
     case 'type':h=lab('Write the phrase in English')+prompt+'<textarea id="ti" class="ti" rows="3" placeholder="Type the English phrase" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea><div id="hl" class="hintline"></div><div class="row"><button class="btn ghost" data-a="hint">Hint</button><button class="btn primary" data-a="check">Check</button></div>';break;
-    case 'speak':h=lab('Say it in English')+prompt+'<div class="micwrap"><button class="mic" id="mic" data-a="mic" aria-label="Tap to speak">'+ic('mic')+'</button><div class="hintline" id="mstat">'+(SR?'Tap the microphone and say the phrase':'Voice input is not available here. Type it, or use the microphone key on your keyboard.')+'</div></div><div class="heard you" id="heard"></div><div id="hl" class="hintline" style="text-align:center"></div><div id="typebox"></div><div class="row"><button class="btn ghost" data-a="hint">Hint</button><button class="btn ghost" data-a="micType">Type instead</button></div>';break;
+    case 'speak':h=lab('Say it in English')+prompt+'<div class="micwrap"><button class="mic" id="mic" data-a="mic" aria-label="Tap to speak">'+ic('mic')+'</button><div class="hintline" id="mstat">'+(voiceOK()?'Tap the microphone and say the phrase':'Voice input is not available here. Type it, or use the microphone key on your keyboard.')+'</div></div><div class="heard you" id="heard"></div><div id="hl" class="hintline" style="text-align:center"></div><div id="typebox"></div><div class="row"><button class="btn ghost" data-a="hint">Hint</button><button class="btn ghost" data-a="micType">Type instead</button></div>';break;
     case 'cloze':h=lab('Fill the gap')+prompt+'<div class="cloze">'+esc(q.before)+' <span class="gap" id="gp">&nbsp;</span>'+esc(q.after)+'</div>'+optsHTML(q,true);break;
     case 'flash':h=flashHTML(q,p,false);break;
   }
@@ -679,7 +681,7 @@ function renderQ(){
   if(q.items)paintBuild();
   if(q.t.indexOf('listen')===0&&LISTEN)setTimeout(()=>{if(sess&&!sess.locked)speak(p.core)},350);
   if(q.t==='type')setTimeout(()=>{const t=$('#ti');if(t)t.focus()},80);
-  if(q.t==='speak'&&!SR)showTypeBox();
+  if(q.t==='speak'&&!voiceOK())showTypeBox();
 }
 function flashHTML(q,p,flipped){
   const d=ST.set.dir,front=d==='ru-en'?'<div class="ru" style="color:var(--ink);font-size:18px">'+esc(p.ru)+'</div>':'<div class="en" style="font-size:16.5px">'+esc(p.en)+'</div>';
@@ -811,7 +813,7 @@ function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let 
 function lcs(u,t){const m=u.length,n=t.length,d=Array.from({length:m+1},()=>Array(n+1).fill(0));for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)d[i][j]=u[i]===t[j]?d[i+1][j+1]+1:Math.max(d[i+1][j],d[i][j+1]);const k=Array(m).fill(false);let i=0,j=0;while(i<m&&j<n){if(u[i]===t[j]){k[i]=true;i++;j++}else if(d[i+1][j]>=d[i][j+1])i++;else j++}return k}
 
 let REC=null;
-function stopRec(){if(REC){try{REC.onend=null;REC.onerror=null;REC.onresult=null;REC.abort()}catch(e){}REC=null}}
+function stopRec(){if(REC){if(REC.nstop){try{REC.nstop()}catch(e){}}try{REC.onend=null;REC.onerror=null;REC.onresult=null;REC.abort()}catch(e){}REC=null}}
 function setMic(on,msg){const m=$('#mic'),s=$('#mstat');if(m)m.classList.toggle('live',on);if(s&&msg)s.textContent=msg}
 function showTypeBox(){
   const b=$('#typebox');if(!b||b.innerHTML)return;
@@ -822,8 +824,31 @@ function judgeSpeech(alts){
   const rs=alts.map(a=>speechEval(a,p)).sort((a,b)=>(b.ok-a.ok)||(b.cov-a.cov));
   const r=rs[0];conclude(r.ok,r.ok?{you:r.you}:{you:r.you,override:true});
 }
+async function nativeListen(N){
+  const me=sess,qcur=sess.cur;
+  try{
+    const av=await N.available();
+    if(!av||!av.available){setMic(false,'Speech recognition is not installed on this phone. Use Type instead.');showTypeBox();return}
+    let perm=await N.checkPermissions();
+    if(!perm||perm.speechRecognition!=='granted')perm=await N.requestPermissions();
+    if(!perm||perm.speechRecognition!=='granted'){setMic(false,'Microphone permission denied. Allow it in Android Settings > Apps > Radio Check > Permissions, or use Type instead.');showTypeBox();return}
+    $('#heard').textContent='';setMic(true,'Listening… say the phrase, then pause');
+    REC={nstop:()=>N.stop()};
+    const r=await N.start({language:'en-US',maxResults:3,prompt:'',partialResults:false,popup:false});
+    REC=null;setMic(false,'');
+    if(sess!==me||me.locked||sess.cur!==qcur)return;
+    const alts=(r&&r.matches)||[];
+    if(alts.length)judgeSpeech(alts);else setMic(false,'Nothing heard. Tap the microphone and try again.');
+  }catch(e){
+    REC=null;const m=String((e&&e.message)||e||'');
+    if(/match|timeout|no speech|speech/i.test(m)&&!/permission|denied|not.?allowed/i.test(m))setMic(false,'Nothing heard. Tap the microphone and try again.');
+    else{setMic(false,'Could not listen ('+m.slice(0,60)+'). Try again or use Type instead.');showTypeBox()}
+  }
+}
 function micToggle(){
   if(!sess||sess.locked)return;
+  const N=nsr();
+  if(N){if(REC){stopRec();setMic(false,'');return}nativeListen(N);return}
   if(!SR){toast('Voice input is not available here. Use Type instead.');showTypeBox();return}
   if(REC){try{REC.stop()}catch(e){}return}
   try{speechSynthesis.cancel()}catch(e){}
@@ -927,7 +952,7 @@ render();
 })();
 </script>
 <script>
-if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)&&!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 </script>
 </body>
 </html>
