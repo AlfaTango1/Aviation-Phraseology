@@ -28,9 +28,24 @@ jobs:
           cp index.html manifest.webmanifest sw.js icon-192.png icon-512.png icon-maskable-512.png www/
 
       - name: Create the Android project
+        run: npx cap add android
+
+      - name: Allow microphone and speech recognition
         run: |
-          npx cap add android
-          npx cap sync android
+          python3 - <<'PY'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+          add = ''
+          if 'android.permission.RECORD_AUDIO' not in s:
+              add += '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
+          if 'android.speech.RecognitionService' not in s:
+              add += '    <queries>\n        <intent>\n            <action android:name="android.speech.RecognitionService" />\n        </intent>\n    </queries>\n'
+          s = s.replace('</manifest>', add + '</manifest>')
+          open(p, 'w', encoding='utf-8').write(s)
+          PY
+
+      - name: Sync web files and plugins into Android
+        run: npx cap sync android
 
       - name: Build debug APK
         working-directory: android
